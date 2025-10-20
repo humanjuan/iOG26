@@ -13,7 +13,7 @@ iOG26 is a simple Android app designed to block unwanted phone calls automatical
 
 ## Key Features
 
-- **Block Unknown Callers:** Automatically block calls from any number that is not in your contact list.
+- **Block hidden/anonymous callers:** Automatically block calls with hidden/withheld caller ID or when the system marks the presentation as restricted/unknown/payphone. Note: this does not mean “not in your contacts”.
 - **Custom Blocklists:**
     - **Numbers:** Add specific phone numbers to a personal blocklist.
     - **Prefixes:** Block all calls that start with a certain country or area code (e.g., +1-800).
@@ -24,7 +24,21 @@ iOG26 is a simple Android app designed to block unwanted phone calls automatical
     - Decide if you want to receive a silent notification when a call is blocked.
     - Set the time for your daily digest.
 
----
+### How Call Blocking Works
+- The checks are performed in this order:
+  1) Is the call anonymous/hidden and is that setting enabled?
+  2) Is the number in the blocked numbers list?
+  3) Does it start with a blocked prefix?
+
+### Privacy
+- All decisions are made on-device. Blocklists and history are stored locally using Room.
+- The app does not upload your call data to any server.
+
+### Limitations & Compatibility
+- iOG26 must be set as the default “Caller ID & spam” app; otherwise, Android won’t invoke the screening service.
+- Some third‑party VoIP calls may not be routed through Android’s CallScreeningService and cannot be blocked by this app.
+- Behavior may vary across OEMs/ROMs. On some devices, silencing plus rejecting improves reliability (the app already attempts this where supported).
+- Emergency numbers are never blocked.
 
 ## Technical Overview
 
