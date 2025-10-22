@@ -54,6 +54,7 @@ data class Strings(
     val themeLabel: String,
     val languageEs: String,
     val languageEn: String,
+    val languageIt: String,
     val themeGreen: String,
     val themeNavy: String,
     val themeSunset: String,
@@ -138,6 +139,7 @@ val StringsEs = Strings(
     themeLabel = "Tema",
     languageEs = "Español",
     languageEn = "Inglés",
+    languageIt = "Italiano",
     themeGreen = "Verde",
     themeNavy = "Navy",
     themeSunset = "Amanecer",
@@ -220,6 +222,7 @@ val StringsEn = Strings(
     themeLabel = "Theme",
     languageEs = "Spanish",
     languageEn = "English",
+    languageIt = "Italian",
     themeGreen = "Green",
     themeNavy = "Navy",
     themeSunset = "Sunset",
@@ -254,11 +257,98 @@ val StringsEn = Strings(
     dedicationMessage = "Application dedicated to my friend OG, so he can also enjoy on Android those magical features that Apple perfected long ago."
 )
 
+val StringsIt = Strings(
+    appTitle = "iOG26",
+    homeTitle = "Filtro chiamate",
+    homeSubtitle = "Gestisci le regole di blocco e rivedi la cronologia delle chiamate filtrate.",
+    homeCtaSettings = "Impostazioni",
+    homeCtaNumbers = "Numeri bloccati",
+    homeCtaPrefixes = "Prefissi bloccati",
+    homeCtaHistory = "Storico blocchi",
+    homeFooter = "Proteggi la tua tranquillità filtrando le chiamate indesiderate.",
+
+    settingsTitle = "Impostazioni",
+    groupBlocking = "Blocco chiamate",
+    blockUnknown = "Blocca sconosciuti/privati",
+    blockUnknownSub = "Silenzia o filtra le chiamate senza ID chiamante",
+    skipCallLog = "Nascondi nel registro quando si blocca",
+    skipCallLogSub = "Evita voci nella cronologia del telefono",
+    skipNotif = "Nessuna notifica al blocco",
+    skipNotifSub = "Non mostrare una notifica quando si blocca",
+
+    groupDigest = "Riepilogo giornaliero",
+    digestEnable = "Abilita riepilogo giornaliero",
+    digestHint = "Il riepilogo viene riprogrammato cambiando orario o attivando l'opzione.",
+
+    numbersTitle = "Numeri bloccati",
+    searchNumberPlaceholder = "Cerca numero (+39…, 800…, ecc.)",
+    addNumberTitle = "Aggiungi numero",
+    addNumberLabel = "Numero (con o senza +CC)",
+    addNumberHint = "Normalizzato automaticamente in formato E.164 (es: +39 3 12345678).",
+    fromContacts = "Dai contatti",
+    save = "Salva",
+    cancel = "Annulla",
+    delete = "Elimina",
+
+    prefixesTitle = "Prefissi bloccati",
+    searchPrefixPlaceholder = "Cerca (+39 800*, 800* NSN, ecc.)",
+    addPrefixTitle = "Aggiungi prefisso",
+    prefixLabel = "Prefisso (solo cifre)",
+    countryCodeLabel = "Prefisso internazionale (opzionale)",
+
+    historyTitle = "Storico blocchi",
+    daysBack = "Giorni indietro",
+    apply = "Applica",
+    noRecentBlocks = "Nessun blocco recente",
+
+    languageLabel = "Lingua",
+    themeLabel = "Tema",
+    languageEs = "Spagnolo",
+    languageEn = "Inglese",
+    languageIt = "Italiano",
+    themeGreen = "Verde",
+    themeNavy = "Blu Navy",
+    themeSunset = "Tramonto",
+    themeViolet = "Viola",
+
+    blockedOnTemplate = "Bloccato il %s",
+    totalTemplate = "Totale: %d",
+    deletedNumberTemplate = "Numero eliminato: %s",
+
+    // History screen labels
+    historySummaryTitle = "Riepilogo blocchi",
+    historySummarySubtitle = "Statistiche e attività recente",
+    recentEvents = "Eventi recenti",
+    chartBlocksPerDay = "Blocchi per giorno",
+    unknownCaller = "Sconosciuto",
+    metricsTotal = "Totale",
+    metricsAvgPerDay = "Media/giorno",
+    metricsActiveDays = "Giorni attivi",
+    metricsLast = "Ultimo",
+
+    // History extras (charts)
+    chartByCallerType = "Per tipo chiamante",
+    knownCaller = "Conosciuto",
+
+    // Settings: System info
+    systemInfoTitle = "Info di sistema",
+    systemAppVersion = "Versione app",
+    systemKotlinVersion = "Versione Kotlin",
+    systemAndroidVersion = "Versione Android",
+    systemDevice = "Dispositivo",
+    systemLibraries = "Librerie",
+    dedicationMessage = "Applicazione dedicata al mio amico OG, così può godersi anche su Android quelle funzioni magiche che Apple ha perfezionato da tempo."
+)
+
 val LocalStrings = staticCompositionLocalOf { StringsEs }
 
 @Composable
 fun ProvideStrings(language: String, content: @Composable () -> Unit) {
-    val strings = if (language.uppercase() == "EN") StringsEn else StringsEs
+    val strings = when (language.uppercase()) {
+        "EN" -> StringsEn
+        "IT" -> StringsIt
+        else -> StringsEs
+    }
     CompositionLocalProvider(LocalStrings provides strings) {
         content()
     }

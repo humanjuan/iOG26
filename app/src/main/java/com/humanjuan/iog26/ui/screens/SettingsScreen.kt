@@ -340,7 +340,8 @@ private fun LanguageRow(current: String, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val items = listOf(
         "ES" to LocalStrings.current.languageEs,
-        "EN" to LocalStrings.current.languageEn
+        "EN" to LocalStrings.current.languageEn,
+        "IT" to LocalStrings.current.languageIt
     )
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
