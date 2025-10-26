@@ -40,7 +40,6 @@ private val indicatorPalette = listOf(
 @Composable
 fun BlockedHistoryScreen(
     vm: EventsViewModel = viewModel(),
-    onOpenMenu: () -> Unit = {},
     onRegisterCentralAction: (((() -> Unit)) -> Unit)? = null
 ) {
     var recentDays by remember { mutableLongStateOf(7L) }
@@ -251,33 +250,6 @@ private fun BlockedEventCard(number: String, timestamp: Long, count: Int) {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun MetricChip(label: String, value: String, modifier: Modifier = Modifier) {
-    ElevatedCard(
-        modifier = modifier.height(64.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            )
         }
     }
 }

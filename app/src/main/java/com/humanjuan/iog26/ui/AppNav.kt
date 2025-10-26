@@ -175,7 +175,7 @@ fun AppNav(modifier: Modifier = Modifier) {
             startDestination = Routes.HISTORY,
             modifier = Modifier.padding(padding)
         ) {
-            composable(Routes.HISTORY) { BlockedHistoryScreen(onOpenMenu = {}, onRegisterCentralAction = { action ->
+            composable(Routes.HISTORY) { BlockedHistoryScreen(onRegisterCentralAction = { action ->
                 actionHistory = action }) }
             composable(Routes.NUMBERS) { NumberListScreen(onRegisterCentralAction = { action ->
                 actionNumbers = action }) }
