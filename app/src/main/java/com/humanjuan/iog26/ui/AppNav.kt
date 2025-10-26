@@ -3,10 +3,12 @@ package com.humanjuan.iog26.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -15,12 +17,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -51,8 +53,15 @@ fun AppNav(modifier: Modifier = Modifier) {
     val nav = rememberNavController()
     val currentBackStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+    // Use an effective route to avoid transient null on first frame
+    val effectiveRoute = currentRoute ?: Routes.HISTORY
 
     val strings = LocalStrings.current
+
+    // Central dynamic action registered by screens (per-route to avoid flicker)
+    var actionHistory by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var actionNumbers by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var actionPrefixes by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     var showDedicationDialog by remember { mutableStateOf(false) }
 
@@ -86,7 +95,7 @@ fun AppNav(modifier: Modifier = Modifier) {
         }
     }
 
-    val screenTitle = when (currentRoute) {
+    val screenTitle = when (effectiveRoute) {
         Routes.HISTORY -> strings.historyTitle
         Routes.NUMBERS -> strings.numbersTitle
         Routes.PREFIXES -> strings.prefixesTitle
@@ -130,6 +139,14 @@ fun AppNav(modifier: Modifier = Modifier) {
             )
         },
         bottomBar = {
+            val centerVisible = when (effectiveRoute) {
+                Routes.SETTINGS -> false
+                else -> true
+            }
+            val centerIcon = when (effectiveRoute) {
+                Routes.HISTORY -> Icons.Filled.Refresh
+                else -> Icons.Filled.Add
+            }
             BottomNavigationBar(
                 currentRoute = currentRoute,
                 onNavigate = { route ->
@@ -137,6 +154,16 @@ fun AppNav(modifier: Modifier = Modifier) {
                         popUpTo(nav.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
+                    }
+                },
+                centerVisible = centerVisible,
+                centerIcon = centerIcon,
+                onCenterClick = {
+                    when (effectiveRoute) {
+                        Routes.HISTORY -> actionHistory?.invoke()
+                        Routes.NUMBERS -> actionNumbers?.invoke()
+                        Routes.PREFIXES -> actionPrefixes?.invoke()
+                        else -> {}
                     }
                 }
             )
@@ -148,9 +175,12 @@ fun AppNav(modifier: Modifier = Modifier) {
             startDestination = Routes.HISTORY,
             modifier = Modifier.padding(padding)
         ) {
-            composable(Routes.HISTORY) { BlockedHistoryScreen(onOpenMenu = {}) }
-            composable(Routes.NUMBERS) { NumberListScreen(onBack = {}, onOpenMenu = {}) }
-            composable(Routes.PREFIXES) { PrefixListScreen(onBack = {}, onOpenMenu = {}) }
+            composable(Routes.HISTORY) { BlockedHistoryScreen(onOpenMenu = {}, onRegisterCentralAction = { action ->
+                actionHistory = action }) }
+            composable(Routes.NUMBERS) { NumberListScreen(onRegisterCentralAction = { action ->
+                actionNumbers = action }) }
+            composable(Routes.PREFIXES) { PrefixListScreen(onBack = {}, onOpenMenu = {}, onRegisterCentralAction = { action ->
+                actionPrefixes = action }) }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = {}, onOpenMenu = {}) }
             composable(Routes.HOME) { HomeScreen(nav) }
         }
@@ -160,49 +190,74 @@ fun AppNav(modifier: Modifier = Modifier) {
 @Composable
 fun BottomNavigationBar(
     currentRoute: String?,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    centerVisible: Boolean,
+    centerIcon: ImageVector,
+    onCenterClick: () -> Unit
 ) {
-    val context = LocalContext.current
     val items = listOf(
         NavItem("Historial", Icons.Filled.History, Routes.HISTORY),
         NavItem("Números", Icons.Filled.Shield, Routes.NUMBERS),
         NavItem("Prefijos", Icons.AutoMirrored.Filled.List, Routes.PREFIXES),
-        NavItem("Ajustes", Icons.Filled.Settings, Routes.SETTINGS),
+        NavItem("Ajustes", Icons.Filled.Settings, Routes.SETTINGS)
     )
+
+    val navSurfaceColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
 
     Box {
         Surface(
             tonalElevation = 6.dp,
             shadowElevation = 8.dp,
-            color = MaterialTheme.colorScheme.surface,
-//            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = navSurfaceColor,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
+                .height(64.dp)
                 .align(Alignment.BottomCenter)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
+                    .fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items.forEachIndexed { index, item ->
+                items.take(2).forEach { item ->
                     val selected = currentRoute == item.route
-                    val color = if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
+                            .weight(1f) // Distribute space evenly
                             .clip(RoundedCornerShape(50))
                             .clickable { onNavigate(item.route) }
-                            .padding(vertical = 4.dp, horizontal = 6.dp)
+                            .padding(vertical = 2.dp)
                     ) {
+                        val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = color,
+                            modifier = Modifier.size(26.dp)
+                        )
+                        Text(
+                            text = item.label,
+                            color = color,
+                            fontSize = 12.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(0.5f))
+
+                items.drop(2).forEach { item ->
+                    val selected = currentRoute == item.route
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(50))
+                            .clickable { onNavigate(item.route) }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         Icon(
                             imageVector = item.icon,
                             contentDescription = item.label,
@@ -220,6 +275,42 @@ fun BottomNavigationBar(
             }
         }
 
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = (-24).dp)
+                .alpha(if (centerVisible) 1f else 0f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(navSurfaceColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shadowElevation = 0.dp,
+                    tonalElevation = 0.dp
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clickable { if (centerVisible) onCenterClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Crossfade(targetState = centerIcon, label = "centerFabIcon") { icn ->
+                            Icon(
+                                icn,
+                                contentDescription = "Center action",
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

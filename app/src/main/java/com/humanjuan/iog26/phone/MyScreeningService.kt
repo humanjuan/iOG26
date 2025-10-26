@@ -35,21 +35,27 @@ class MyScreeningService : CallScreeningService() {
                 context = applicationContext,
                 details = callDetails,
                 repo = repo,
-                blockUnknownEnabled = settings.blockUnknownEnabled,
-                skipCallLogOnBlock = settings.skipCallLogOnBlock,
-                skipNotificationOnBlock = settings.skipNotificationOnBlock
+                blockAnonymousEnabled = settings.blockAnonymousEnabled,
+                blockUnknownContactsEnabled = settings.blockUnknownContactsEnabled,
+                skipCallLogOnBlock = !settings.logBlockedCallsEnabled,
+                skipNotificationOnBlock = !settings.notifyOnBlockEnabled
             )
             Log.d(tag, "decision=$decision")
 
             if (decision.block) {
-                val number = callDetails.handle?.schemeSpecificPart
-                // <-- AQUÍ lanzamos la suspend function en IO
+                val raw = callDetails.handle?.schemeSpecificPart
+                // Normalizamos a E.164 si es posible para hacer coincidir mejor con contactos
+                val normalized = try {
+                    com.humanjuan.iog26.domain.Matching.toE164(raw ?: "", BlockRepository.get(applicationContext).defaultRegion())
+                } catch (_: Throwable) { null }
+                val numberToStore = normalized ?: raw
+                // <-- Registrar evento en IO (numberToStore puede ser null para anónimas)
                 serviceScope.launch {
                     try {
                         val db = AppDb.get(applicationContext)
                         db.events().add(
                             BlockedEvent(
-                                e164 = number,
+                                e164 = numberToStore,
                                 ts = System.currentTimeMillis()
                             )
                         )

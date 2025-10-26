@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.humanjuan.iog26.ui.theme.AppThemeOption
 import com.humanjuan.iog26.ui.theme.IOG26Theme
+import com.humanjuan.iog26.ui.theme.ProvidePrivacy
 import com.humanjuan.iog26.ui.theme.ProvideStrings
 
 class MainActivity : ComponentActivity() {
@@ -60,7 +61,9 @@ class MainActivity : ComponentActivity() {
             }
             IOG26Theme(appTheme = theme) {
                 ProvideStrings(language = prefs.value.language) {
-                    AppNav(modifier = Modifier)
+                    ProvidePrivacy(language = prefs.value.language) {
+                        AppNav(modifier = Modifier)
+                    }
                 }
             }
         }

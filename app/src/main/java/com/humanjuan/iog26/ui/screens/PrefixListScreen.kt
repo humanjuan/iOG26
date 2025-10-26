@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +32,8 @@ import kotlinx.coroutines.launch
 fun PrefixListScreen(
     vm: PrefixRulesViewModel = viewModel(),
     onBack: () -> Unit = {},
-    onOpenMenu: () -> Unit = {}
+    onOpenMenu: () -> Unit = {},
+    onRegisterCentralAction: (((() -> Unit)) -> Unit)? = null
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -38,17 +41,12 @@ fun PrefixListScreen(
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val strings = LocalStrings.current
 
+    LaunchedEffect(Unit) {
+        onRegisterCentralAction?.invoke { showDialog = true }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = LocalStrings.current.addPrefixTitle)
-            }
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         val items by vm.items.collectAsState()
@@ -219,7 +217,17 @@ private fun SearchBar(
 ) {
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { v ->
+            val original = v.text
+            val cursor = v.selection.end.coerceIn(0, original.length)
+            val cleaned = original.filter { it.isDigit() || it == '+' || it == '*' }
+            var removedBefore = 0
+            for (i in 0 until cursor) {
+                if (i < original.length && !(original[i].isDigit() || original[i] == '+' || original[i] == '*')) removedBefore++
+            }
+            val newCursor = (cursor - removedBefore).coerceIn(0, cleaned.length)
+            onValueChange(TextFieldValue(cleaned, selection = androidx.compose.ui.text.TextRange(newCursor)))
+        },
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(50)),
@@ -233,7 +241,8 @@ private fun SearchBar(
             focusedBorderColor = Color.Transparent,
             unfocusedBorderColor = Color.Transparent,
             cursorColor = MaterialTheme.colorScheme.primary
-        )
+        ),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
     )
 }
 
@@ -277,7 +286,8 @@ private fun AddPrefixDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 OutlinedTextField(
                     value = cc,
@@ -299,7 +309,8 @@ private fun AddPrefixDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
         },

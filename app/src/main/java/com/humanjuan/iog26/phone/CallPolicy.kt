@@ -2,6 +2,7 @@ package com.humanjuan.iog26.phone
 
 import android.content.Context
 import android.net.Uri
+import android.provider.ContactsContract
 import android.telecom.CallScreeningService
 import android.telecom.TelecomManager
 import android.telephony.PhoneNumberUtils
@@ -23,7 +24,8 @@ object CallPolicy {
         context: Context,
         details: Details,
         repo: BlockRepository,
-        blockUnknownEnabled: Boolean,
+        blockAnonymousEnabled: Boolean,
+        blockUnknownContactsEnabled: Boolean,
         skipCallLogOnBlock: Boolean,
         skipNotificationOnBlock: Boolean
     ): Decision {
@@ -45,8 +47,16 @@ object CallPolicy {
                 presentation == TelecomManager.PRESENTATION_UNKNOWN ||
                 presentation == TelecomManager.PRESENTATION_PAYPHONE
 
-        if (blockUnknownEnabled && looksAnonymous) {
-            return Decision(block = true, reason = "unknown", shouldSkipCallLog = skipCallLogOnBlock, shouldSkipNotification = skipNotificationOnBlock)
+        if (blockAnonymousEnabled && looksAnonymous) {
+            return Decision(block = true, reason = "anonymous", shouldSkipCallLog = skipCallLogOnBlock, shouldSkipNotification = skipNotificationOnBlock)
+        }
+
+        // Si está habilitado, bloquear números que no estén en contactos (y no anónimos)
+        if (blockUnknownContactsEnabled && !rawNumber.isNullOrBlank()) {
+            val notInContacts = !isInContacts(context, rawNumber)
+            if (notInContacts) {
+                return Decision(block = true, reason = "unknown-contact", shouldSkipCallLog = skipCallLogOnBlock, shouldSkipNotification = skipNotificationOnBlock)
+            }
         }
 
         // Números exactos/NSN/short match en lista (usa heurística de libphonenumber)
@@ -91,5 +101,24 @@ object CallPolicy {
             } catch (_: Throwable) { /* ignore */ }
         }
         return builder.build()
+    }
+
+    private fun isInContacts(context: Context, number: String): Boolean {
+        return try {
+            val uri = ContactsContract.PhoneLookup.CONTENT_FILTER_URI.buildUpon()
+                .appendPath(Uri.encode(number))
+                .build()
+            context.contentResolver.query(
+                uri,
+                arrayOf(ContactsContract.PhoneLookup._ID),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                cursor.moveToFirst()
+            } ?: false
+        } catch (_: Throwable) {
+            false
+        }
     }
 }

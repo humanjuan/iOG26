@@ -8,6 +8,11 @@ import com.humanjuan.iog26.data.AppDb
 import com.humanjuan.iog26.data.DigestSettings
 import com.humanjuan.iog26.data.DigestSettingsRepo
 import com.humanjuan.iog26.data.Settings
+import com.humanjuan.iog26.data.AppPrefsRepo
+import com.humanjuan.iog26.ui.theme.Strings
+import com.humanjuan.iog26.ui.theme.StringsEn
+import com.humanjuan.iog26.ui.theme.StringsEs
+import com.humanjuan.iog26.ui.theme.StringsIt
 import com.humanjuan.iog26.digest.DailyDigestWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,10 +22,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 
 data class SettingsUi(
-    val blockUnknownEnabled: Boolean = true,
-    val skipCallLogOnBlock: Boolean = false,
+    val blockAnonymousEnabled: Boolean = true,
+    val blockUnknownContactsEnabled: Boolean = false,
+    // UI uses legacy names for minimal changes; semantics: true => ENABLED (log and notify)
+    val skipCallLogOnBlock: Boolean = true,
     val skipNotificationOnBlock: Boolean = true,
     val digestEnabled: Boolean = true,
     val digestHour: Int = 18,
@@ -31,18 +40,32 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db = AppDb.get(app)
     private val digestRepo = DigestSettingsRepo(app)
+    private val prefsRepo = AppPrefsRepo(app)
 
     // Para optimizaciones/lived state de Room
     private val _settingsRoom = MutableStateFlow(Settings())
     private val _events = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val events = _events.asSharedFlow()
 
+    private suspend fun strings(): Strings {
+        val lang = try {
+            prefsRepo.flow.first().language
+        } catch (_: Throwable) { "ES" }
+        return when (lang.uppercase()) {
+            "EN" -> StringsEn
+            "IT" -> StringsIt
+            else -> StringsEs
+        }
+    }
+
     val ui: StateFlow<SettingsUi> =
         combine(digestRepo.flow, _settingsRoom) { digest, room ->
             SettingsUi(
-                blockUnknownEnabled = room.blockUnknownEnabled,
-                skipCallLogOnBlock = room.skipCallLogOnBlock,
-                skipNotificationOnBlock = room.skipNotificationOnBlock,
+                blockAnonymousEnabled = room.blockAnonymousEnabled,
+                blockUnknownContactsEnabled = room.blockUnknownContactsEnabled,
+                // Map new positive-enable flags to UI state (legacy names)
+                skipCallLogOnBlock = room.logBlockedCallsEnabled,
+                skipNotificationOnBlock = room.notifyOnBlockEnabled,
                 digestEnabled = digest.enabled,
                 digestHour = digest.hour,
                 digestMinute = digest.minute
@@ -62,34 +85,45 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setBlockUnknown(enabled: Boolean) = viewModelScope.launch {
-        val s = (_settingsRoom.value).copy(blockUnknownEnabled = enabled)
+    fun setBlockAnonymous(enabled: Boolean) = viewModelScope.launch {
+        val s = (_settingsRoom.value).copy(blockAnonymousEnabled = enabled)
         db.settings().upsert(s); _settingsRoom.value = s
-        _events.tryEmit(if (enabled) "Bloqueo de desconocidos ACTIVADO" else "Bloqueo de desconocidos DESACTIVADO")
+        val str = strings()
+        _events.tryEmit(if (enabled) str.snackAnonymousOn else str.snackAnonymousOff)
+    }
+
+    fun setBlockUnknownContacts(enabled: Boolean) = viewModelScope.launch {
+        val s = (_settingsRoom.value).copy(blockUnknownContactsEnabled = enabled)
+        db.settings().upsert(s); _settingsRoom.value = s
+        val str = strings()
+        _events.tryEmit(if (enabled) str.snackUnknownContactsOn else str.snackUnknownContactsOff)
     }
 
     fun setSkipCallLog(enabled: Boolean) = viewModelScope.launch {
-        val s = (_settingsRoom.value).copy(skipCallLogOnBlock = enabled)
+        val s = (_settingsRoom.value).copy(logBlockedCallsEnabled = enabled)
         db.settings().upsert(s); _settingsRoom.value = s
-        _events.tryEmit(if (enabled) "No registrar en historial: ACTIVADO" else "No registrar en historial: DESACTIVADO")
+        val str = strings()
+        _events.tryEmit(if (enabled) str.snackLogOn else str.snackLogOff)
     }
 
     fun setSkipNotif(enabled: Boolean) = viewModelScope.launch {
-        val s = (_settingsRoom.value).copy(skipNotificationOnBlock = enabled)
+        val s = (_settingsRoom.value).copy(notifyOnBlockEnabled = enabled)
         db.settings().upsert(s); _settingsRoom.value = s
-        _events.tryEmit(if (enabled) "Silenciar notificación: ACTIVADO" else "Silenciar notificación: DESACTIVADO")
+        val str = strings()
+        _events.tryEmit(if (enabled) str.snackNotifyOn else str.snackNotifyOff)
     }
 
     fun setDigestEnabled(enabled: Boolean) = viewModelScope.launch {
         digestRepo.setEnabled(enabled)
+        val str = strings()
         if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val curr = ui.value
             DailyDigestWorker.schedule(getApplication(), curr.digestHour, curr.digestMinute)
         }
         if (enabled && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            _events.tryEmit("Resumen diario requiere Android 8.0+ (no se puede programar en este dispositivo)")
+            _events.tryEmit(str.snackDigestRequiresO)
         } else {
-            _events.tryEmit(if (enabled) "Resumen diario ACTIVADO" else "Resumen diario DESACTIVADO")
+            _events.tryEmit(if (enabled) str.snackDigestOn else str.snackDigestOff)
         }
     }
 
@@ -99,6 +133,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DailyDigestWorker.schedule(getApplication(), hour, minute)
         }
-        _events.tryEmit("Hora del resumen: %02d:%02d".format(hour, minute))
+        val str = strings()
+        _events.tryEmit(str.snackDigestTimeSet.format(hour, minute))
     }
 }

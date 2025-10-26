@@ -2,13 +2,16 @@ package com.humanjuan.iog26.ui.screens
 
 import android.app.TimePickerDialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,11 +20,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.humanjuan.iog26.ui.AppPrefsViewModel
 import com.humanjuan.iog26.ui.SettingsViewModel
 import com.humanjuan.iog26.ui.theme.AppThemeOption
+import com.humanjuan.iog26.ui.theme.LocalPrivacy
 import com.humanjuan.iog26.ui.theme.LocalStrings
+import com.humanjuan.iog26.ui.theme.PrivacyEn
+import com.humanjuan.iog26.ui.theme.PrivacyEs
+import com.humanjuan.iog26.ui.theme.PrivacyIt
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,6 +43,7 @@ fun SettingsScreen(
     val state by vm.ui.collectAsState()
     val host = remember { SnackbarHostState() }
     val strings = LocalStrings.current
+    val privacy = LocalPrivacy.current
 
     LaunchedEffect(Unit) {
         vm.events.collectLatest { msg -> host.showSnackbar(msg) }
@@ -59,15 +69,8 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-//            Text(
-//                text = "Hey!",
-//                style = MaterialTheme.typography.headlineMedium.copy(
-//                    fontWeight = FontWeight.Bold,
-//                    color = MaterialTheme.colorScheme.onBackground
-//                )
-//            )
             Text(
-                text = "Personaliza tu experiencia y preferencias.",
+                text = strings.settingsIntro,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -92,10 +95,17 @@ fun SettingsScreen(
             // Grupo 2: Bloqueo
             SettingsCard(title = strings.groupBlocking) {
                 RowSwitch(
-                    title = strings.blockUnknown,
-                    subtitle = strings.blockUnknownSub,
-                    checked = state.blockUnknownEnabled,
-                    onCheckedChange = vm::setBlockUnknown
+                    title = strings.blockAnonymous,
+                    subtitle = strings.blockAnonymousSub,
+                    checked = state.blockAnonymousEnabled,
+                    onCheckedChange = vm::setBlockAnonymous
+                )
+
+                RowSwitch(
+                    title = strings.blockUnknownContacts,
+                    subtitle = strings.blockUnknownContactsSub,
+                    checked = state.blockUnknownContactsEnabled,
+                    onCheckedChange = vm::setBlockUnknownContacts
                 )
 
                 RowSwitch(
@@ -123,6 +133,7 @@ fun SettingsScreen(
                 )
 
                 TimeRow(
+                    title = strings.change,
                     hour = state.digestHour,
                     minute = state.digestMinute,
                     enabled = state.digestEnabled,
@@ -133,7 +144,7 @@ fun SettingsScreen(
             // Grupo 4: Información del sistema
             SettingsCard(title = strings.systemInfoTitle) {
                 val appVersion = com.humanjuan.iog26.BuildConfig.APP_VERSION
-                val kotlinVer = kotlin.KotlinVersion.CURRENT.toString()
+                val kotlinVer = KotlinVersion.CURRENT.toString()
                 val androidVer = "${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})"
                 val device = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}"
 
@@ -156,11 +167,114 @@ fun SettingsScreen(
                 InfoRow(label = "DataStore", value = com.humanjuan.iog26.BuildConfig.DATASTORE_VERSION)
                 InfoRow(label = "libphonenumber", value = com.humanjuan.iog26.BuildConfig.LIBPHONENUMBER_VERSION)
             }
+
+            // Grupo 5: Política de Privacidad
+            var showPrivacy by remember { mutableStateOf(false) }
+            if (showPrivacy) {
+                Dialog(onDismissRequest = { showPrivacy = false }) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+//                        tonalElevation = 8.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = privacy.title,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            listOf(
+                                privacy.generalInfoTitle to privacy.generalInfoText,
+                                privacy.dataCollectedTitle to """
+                                    ${privacy.dataCollectedText}
+
+                                    * ${privacy.dataCollectedItemA}
+                                    * ${privacy.dataCollectedItemB}
+
+                                    ${privacy.dataCollectedEndText}
+                                """.trimIndent(),
+                                privacy.useDataTitle to """
+                                    ${privacy.useDataText}
+
+                                    * ${privacy.useDataItemA}
+                                    * ${privacy.useDataItemB}
+                                """.trimIndent(),
+                                privacy.devicePermissionsTitle to """
+                                    ${privacy.devicePermissionsText}
+
+                                    * ${privacy.devicePermissionsItemA}
+                                    * ${privacy.devicePermissionsItemB}
+                                    * ${privacy.devicePermissionsItemC}
+
+                                    ${privacy.devicePermissionsEndText}
+                                """.trimIndent(),
+                                privacy.securityTitle to privacy.securityText,
+                                privacy.contactTitle to privacy.contactText
+                            ).forEach { (title, content) ->
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                                Text(
+                                    text = content,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 20.sp
+                                    )
+                                )
+                                Spacer(Modifier.height(4.dp))
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { showPrivacy = false }) {
+                                    Text(privacy.close)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showPrivacy = true }
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = LocalStrings.current.privacyTitle,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Open privacy policy",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
 
-// --- COMPONENTES MODERNOS ---
 
 @Composable
 private fun SettingsCard(
@@ -262,6 +376,7 @@ private fun InfoRow(label: String, value: String) {
 
 @Composable
 private fun TimeRow(
+    title: String,
     hour: Int,
     minute: Int,
     enabled: Boolean,
@@ -294,12 +409,10 @@ private fun TimeRow(
             },
             enabled = enabled
         ) {
-            Text("Cambiar")
+            Text(title)
         }
     }
 }
-
-// --- DROPDOWNS MODERNOS ---
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -38,8 +38,6 @@ private object InMemoryBlockRepository : BlockRepository {
     private val numbers = mutableSetOf<String>() // +E164
     private val prefixes = mutableListOf<PrefixRule>()
     private val idGen = AtomicLong(1L)
-
-    // Toggle de “bloquear desconocidos”
     private var blockUnknown = false
 
     override fun defaultRegion(): String? = region
@@ -49,8 +47,6 @@ private object InMemoryBlockRepository : BlockRepository {
     override fun getBlockedNumbers(): List<String> = numbers.toList()
 
     override fun getPrefixes(): List<PrefixRule> = prefixes.toList()
-
-    // ------- Helpers para pruebas desde la UI / debug (opcionales) -------
 
     fun setDefaultRegion(value: String?) { region = value }
     fun setBlockUnknown(enabled: Boolean) { blockUnknown = enabled }
@@ -65,25 +61,24 @@ private object InMemoryBlockRepository : BlockRepository {
     }
     fun removePrefix(id: Long) { prefixes.removeAll { it.id == id } }
 
-    // Seed opcional para que tengas algo al iniciar
     init {
         // Ejemplo: bloquear prefijo 800 sobre NSN, y un número E164 cualquiera
         addPrefix(digits = "800", countryCode = null)
         addBlockedNumber("+56987654321")
         setBlockUnknown(false)
-        setDefaultRegion("CL") // pon "CL" si quieres inferencias locales
+        setDefaultRegion("CL")
     }
 }
 
-/** Implementación respaldada por Room para unificar reglas con la UI. */
 private class RoomBackedBlockRepository(ctx: Context) : BlockRepository {
     private val appCtx = ctx.applicationContext
 
-    override fun defaultRegion(): String? = "CL" // región por defecto para parseo de números sin +CC
+    override fun defaultRegion(): String? = "CL"
 
     override fun blockUnknownEnabled(): Boolean = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
-        val s = AppDb.get(appCtx).settings().get()
-        s?.blockUnknownEnabled ?: true
+        val s = AppDb.get(appCtx).settings().get() ?: Settings()
+        // legacy: consider either flag as enabling some form of unknown blocking
+        (s.blockAnonymousEnabled) || (s.blockUnknownContactsEnabled)
     }
 
     override fun isBlockedNumber(e164: String): Boolean = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {

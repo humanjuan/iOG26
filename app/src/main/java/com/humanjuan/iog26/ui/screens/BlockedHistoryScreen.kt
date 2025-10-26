@@ -1,12 +1,13 @@
 package com.humanjuan.iog26.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,9 +19,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.humanjuan.iog26.data.BlockedEvent
 import com.humanjuan.iog26.ui.EventsViewModel
@@ -28,17 +28,39 @@ import com.humanjuan.iog26.ui.theme.LocalStrings
 import java.text.SimpleDateFormat
 import java.util.*
 
+private val indicatorPalette = listOf(
+    Color(0xFF3B82F6),
+    Color(0xFF22C55E),
+    Color(0xFFF59E0B),
+    Color(0xFFEF4444),
+    Color(0xFFA855F7)
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlockedHistoryScreen(
     vm: EventsViewModel = viewModel(),
-    onOpenMenu: () -> Unit = {}
+    onOpenMenu: () -> Unit = {},
+    onRegisterCentralAction: (((() -> Unit)) -> Unit)? = null
 ) {
-    var daysInput by remember { mutableStateOf(TextFieldValue("7")) }
+    var recentDays by remember { mutableLongStateOf(7L) }
     val events by vm.rawItems.collectAsState()
     val groupedEvents by vm.groupedItems.collectAsState()
+    val inventory by vm.inventory.collectAsState()
+    val breakdown by vm.callerBreakdown.collectAsState()
+    val countryStats by vm.countryStats.collectAsState()
 
-    LaunchedEffect(Unit) { vm.load(7) }
+    LaunchedEffect(Unit) {
+        vm.load(7)
+        vm.loadRecentFor(recentDays)
+    }
+
+    LaunchedEffect(recentDays) {
+        onRegisterCentralAction?.invoke {
+            vm.load(7)
+            vm.loadRecentFor(recentDays)
+        }
+    }
 
     val gradient = Brush.verticalGradient(
         listOf(
@@ -64,79 +86,35 @@ fun BlockedHistoryScreen(
             item {
                 Text(
                     text = strings.historySummarySubtitle,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 )
             }
 
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = daysInput,
-                        onValueChange = { v ->
-                            val original = v.text
-                            val cursor = v.selection.end.coerceIn(0, original.length)
-                            val cleaned = original.filter { it.isDigit() }
-                            var removedBefore = 0
-                            for (i in 0 until cursor) {
-                                if (i < original.length && !original[i].isDigit()) removedBefore++
-                            }
-                            val newCursor = (cursor - removedBefore).coerceIn(0, cleaned.length)
-                            daysInput = TextFieldValue(cleaned, selection = androidx.compose.ui.text.TextRange(newCursor))
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(50)),
-                        placeholder = { Text(strings.daysBack, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        shape = RoundedCornerShape(50),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = MaterialTheme.colorScheme.primary
-                        ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val presets = listOf(7L, 14L, 30L)
-                        presets.forEach { d ->
-                            val selected = daysInput.text.toLongOrNull() == d
-                            AssistChip(
-                                onClick = {
-                                    daysInput = TextFieldValue(d.toString())
-                                    vm.load(d)
-                                },
-                                label = { Text(d.toString()) },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                    else MaterialTheme.colorScheme.surface,
-                                    labelColor = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
-                        Spacer(modifier = Modifier.weight(1f))
-                        TextButton(onClick = {
-                            val d = daysInput.text.toLongOrNull() ?: 0
-                            vm.load(d)
-                        }) { Text(strings.apply) }
-                    }
-                }
-            }
 
             item {
-                DashboardMetrics(events = events)
+                DashboardMetrics(
+                    events = events,
+                    blockedNumbers = inventory.blockedNumbers,
+                    blockedPrefixes = inventory.blockedPrefixes,
+                    countriesCount = countryStats.size
+                )
             }
 
             if (events.isNotEmpty()) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         BlockedEventsChart(events.map { it.ts })
-                        CallerTypeDonutChart(events)
+                        CallerTypeDonutChart(breakdown)
                     }
                 }
+            }
+
+            if (countryStats.isNotEmpty()) {
+                val top5 = countryStats.take(5)
+                item { CountriesCard(top5) }
             }
 
             if (groupedEvents.isEmpty()) {
@@ -166,8 +144,19 @@ fun BlockedHistoryScreen(
                     )
                 }
 
+                // Quick filter buttons centered between Top countries and Recent events
+                item {
+                    QuickFilterRow(
+                        selectedDays = recentDays,
+                        onSelect = { days ->
+                            recentDays = days
+                            vm.loadRecentFor(days)
+                        }
+                    )
+                }
+
                 items(groupedEvents) { g ->
-                    val number = g.number ?: strings.unknownCaller
+                    val number = g.number.ifBlank { strings.unknownCaller }
                     BlockedEventCard(number, g.mostRecentTimestamp, g.count)
                 }
             }
@@ -176,14 +165,23 @@ fun BlockedHistoryScreen(
 }
 
 @Composable
-private fun DashboardMetrics(events: List<BlockedEvent>) {
+private fun DashboardMetrics(
+    events: List<BlockedEvent>,
+    blockedNumbers: Int,
+    blockedPrefixes: Int,
+    countriesCount: Int
+) {
     val total = events.size
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val grouped = events.groupBy { sdf.format(Date(it.ts)) }
     val daysWithActivity = grouped.size
     val avgPerDay = if (daysWithActivity > 0) total / daysWithActivity.toFloat() else 0f
-    val lastEventDate = events.maxByOrNull { it.ts }?.ts?.let { dateFmt(it) } ?: "—"
-
+    val lastTs = events.maxByOrNull { it.ts }?.ts
+    val lastEventDate = if (lastTs != null) {
+        val d = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(lastTs))
+        val t = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(lastTs))
+        "$d\n$t"
+    } else "—"
     val strings = LocalStrings.current
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -198,277 +196,15 @@ private fun DashboardMetrics(events: List<BlockedEvent>) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricCard(strings.metricsActiveDays, "$daysWithActivity", Modifier.weight(1f))
+            MetricCard(strings.metricsTotalCountries, "$countriesCount", Modifier.weight(1f))
             MetricCard(strings.metricsLast, lastEventDate, Modifier.weight(1f))
         }
-    }
-}
-
-@Composable
-private fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
-    ElevatedCard(
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    }
-}
-
-@Composable
-private fun BlockedEventsChart(timestamps: List<Long>) {
-    val dayKeyFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val xLabelFormat = SimpleDateFormat("MM-dd", Locale.getDefault())
-
-    val grouped = timestamps.groupBy { dayKeyFormat.format(Date(it)) }
-
-    val existingDays = grouped.keys
-    val sortedDays: List<String>
-    val values: List<Float>
-    if (existingDays.isEmpty()) {
-        sortedDays = emptyList()
-        values = emptyList()
-    } else {
-        val firstKey = existingDays.minOrNull()!!
-        val lastKey = existingDays.maxOrNull()!!
-        val startDate = dayKeyFormat.parse(firstKey)!!
-        val endDate = dayKeyFormat.parse(lastKey)!!
-        val cal = java.util.Calendar.getInstance().apply { time = startDate }
-        val fullDays = mutableListOf<String>()
-        while (!cal.time.after(endDate)) {
-            fullDays += dayKeyFormat.format(cal.time)
-            cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
-        }
-        sortedDays = fullDays
-        values = sortedDays.map { (grouped[it]?.size ?: 0).toFloat() }
-    }
-
-    val maxValueRaw = values.maxOrNull() ?: 0f
-    val maxValue = if (maxValueRaw <= 0f) 1f else maxValueRaw
-
-    val strings = LocalStrings.current
-    val primary = MaterialTheme.colorScheme.primary
-    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
-    val divider = MaterialTheme.colorScheme.outlineVariant ?: onSurfaceVariant.copy(alpha = 0.25f)
-
-    val tickCount = 5
-    val yTicks = (0 until tickCount).map { i ->
-        (maxValue * i / (tickCount - 1)).toInt()
-    }
-
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 200.dp, max = 260.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(
-                text = strings.chartBlocksPerDay,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(8.dp))
-
-            if (sortedDays.isEmpty()) {
-                Text(
-                    text = strings.noRecentBlocks,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            } else {
-                val yGutter = 40.dp
-                val chartHeight = 120.dp
-
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                    Column(
-                        modifier = Modifier
-                            .width(yGutter)
-                            .height(chartHeight),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        yTicks.reversed().forEach { v ->
-                            Text(
-                                text = v.toString(),
-                                style = MaterialTheme.typography.labelSmall.copy(color = onSurfaceVariant)
-                            )
-                        }
-                    }
-
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .height(chartHeight)
-                        .padding(start = 4.dp)) {
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val h = size.height
-                            val w = size.width
-                            val strokePx = 1.dp.toPx()
-                            yTicks.forEach { v ->
-                                val y = h - (v / maxValue) * h
-                                drawLine(
-                                    color = divider,
-                                    start = Offset(0f, y),
-                                    end = Offset(w, y),
-                                    strokeWidth = strokePx
-                                )
-                            }
-                            drawLine(color = onSurfaceVariant.copy(alpha = 0.6f), start = Offset(0f, 0f), end = Offset(0f, h), strokeWidth = strokePx)
-                            drawLine(color = onSurfaceVariant.copy(alpha = 0.6f), start = Offset(0f, h), end = Offset(w, h), strokeWidth = strokePx)
-
-                            val widthStep = if (values.size <= 1) w else w / (values.size - 1)
-                            val path = Path()
-                            values.forEachIndexed { index, value ->
-                                val x = index * widthStep
-                                val y = h - (value / maxValue) * h
-                                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                            }
-                            val fillPath = Path().apply {
-                                addPath(path)
-                                lineTo(w, h)
-                                lineTo(0f, h)
-                                close()
-                            }
-                            drawPath(
-                                path = fillPath,
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(primary.copy(alpha = 0.22f), Color.Transparent)
-                                )
-                            )
-                            drawPath(
-                                path = path,
-                                color = primary,
-                                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                            )
-                        }
-                    }
-                }
-
-                val maxLabels = 6
-                val stride = ((sortedDays.size + maxLabels - 1) / maxLabels).coerceAtLeast(1)
-                Spacer(Modifier.height(6.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    sortedDays.indices.filter { it % stride == 0 || it == sortedDays.lastIndex }.forEach { i ->
-                        val dayStr = sortedDays[i]
-                        val date = try { dayKeyFormat.parse(dayStr) } catch (_: Throwable) { null }
-                        val label = date?.let { xLabelFormat.format(it) } ?: dayStr.substring(5)
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall.copy(color = onSurfaceVariant)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CallerTypeDonutChart(events: List<BlockedEvent>) {
-    val strings = LocalStrings.current
-    val known = events.count { it.e164 != null }
-    val unknown = events.size - known
-    val total = kotlin.math.max(known + unknown, 1)
-    val knownPct = (known.toFloat() / total.toFloat())
-
-    val primary = MaterialTheme.colorScheme.primary
-    val tertiary = MaterialTheme.colorScheme.tertiary
-    val surface = MaterialTheme.colorScheme.surface
-
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 150.dp, max = 200.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = surface),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = strings.chartByCallerType,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                val donutSize = 80.dp
-                Box(modifier = Modifier.size(donutSize)) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val sweepKnown = 360f * knownPct
-                        drawArc(
-                            color = primary,
-                            startAngle = -90f,
-                            sweepAngle = sweepKnown,
-                            useCenter = true
-                        )
-                        drawArc(
-                            color = tertiary,
-                            startAngle = -90f + sweepKnown,
-                            sweepAngle = 360f - sweepKnown,
-                            useCenter = true
-                        )
-                        val holeRadius = size.minDimension * 0.35f
-                        drawCircle(color = surface, radius = holeRadius, center = center)
-                    }
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "${(knownPct * 100).toInt()}%",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-                Spacer(Modifier.width(16.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .size(12.dp)
-                                .background(primary, RoundedCornerShape(2.dp))
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("${strings.knownCaller}: $known")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .size(12.dp)
-                                .background(tertiary, RoundedCornerShape(2.dp))
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("${strings.unknownCaller}: $unknown")
-                    }
-                }
-            }
+            MetricCard(strings.metricBlockNumbers, "$blockedNumbers", Modifier.weight(1f))
+            MetricCard(strings.metricBlockPrefixes, "$blockedPrefixes", Modifier.weight(1f))
         }
     }
 }
@@ -515,6 +251,449 @@ private fun BlockedEventCard(number: String, timestamp: Long, count: Int) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MetricChip(label: String, value: String, modifier: Modifier = Modifier) {
+    ElevatedCard(
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+            Text(
+                value,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
+    val numeric = value.toFloatOrNull()
+
+    ElevatedCard(
+        modifier = modifier.height(100.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (numeric != null) {
+                val animatedValue by animateFloatAsState(
+                    targetValue = numeric,
+                    animationSpec = tween(durationMillis = 900)
+                )
+                Text(
+                    if (numeric % 1 == 0f) animatedValue.toInt().toString() else "%.1f".format(animatedValue),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 40.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                )
+            } else {
+                Text(
+                    value,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        lineHeight = 22.sp
+                    ),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun BlockedEventsChart(timestamps: List<Long>) {
+    val dayKeyFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val xLabelFormat = SimpleDateFormat("MM-dd", Locale.getDefault())
+
+    val grouped = timestamps.groupBy { dayKeyFormat.format(Date(it)) }
+
+    val existingDays = grouped.keys
+    if (existingDays.isEmpty()) return
+
+    val firstKey = existingDays.minOrNull()!!
+    val lastKey = existingDays.maxOrNull()!!
+    val startDate = dayKeyFormat.parse(firstKey)!!
+    val endDate = dayKeyFormat.parse(lastKey)!!
+
+    val cal = Calendar.getInstance().apply { time = startDate }
+    val sortedDays = mutableListOf<String>()
+    while (!cal.time.after(endDate)) {
+        sortedDays += dayKeyFormat.format(cal.time)
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+    }
+
+    val values = sortedDays.map { (grouped[it]?.size ?: 0).toFloat() }
+    val maxValue = (values.maxOrNull() ?: 1f).coerceAtLeast(1f)
+
+    val strings = LocalStrings.current
+    val accent = MaterialTheme.colorScheme.primary
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val divider = onSurfaceVariant.copy(alpha = 0.15f)
+    val animationProgress by animateFloatAsState(targetValue = 1f, animationSpec = tween(1000))
+
+    val tickCount = 5
+    val yTicks = (0 until tickCount).map { i -> (maxValue * i / (tickCount - 1)).toInt() }
+
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 200.dp, max = 260.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                text = strings.chartBlocksPerDay,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Eje Y
+                Column(
+                    modifier = Modifier
+                        .width(36.dp)
+                        .height(140.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    yTicks.reversed().forEach { v ->
+                        Text(
+                            text = v.toString(),
+                            style = MaterialTheme.typography.labelSmall.copy(color = onSurfaceVariant)
+                        )
+                    }
+                }
+
+                // Área del gráfico
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(140.dp)
+                        .padding(start = 4.dp)
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val h = size.height
+                        val w = size.width
+                        val step = if (values.size <= 1) w else w / (values.size - 1)
+                        val strokePx = 1.dp.toPx()
+
+                        // Líneas horizontales
+                        yTicks.forEach { v ->
+                            val y = h - (v / maxValue) * h
+                            drawLine(
+                                color = divider,
+                                start = Offset(0f, y),
+                                end = Offset(w, y),
+                                strokeWidth = strokePx
+                            )
+                        }
+
+                        // Path de datos
+                        val path = Path()
+                        values.forEachIndexed { i, v ->
+                            val x = i * step
+                            val y = h - (v / maxValue) * h
+                            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+
+                        val fill = Path().apply {
+                            addPath(path)
+                            lineTo(w, h)
+                            lineTo(0f, h)
+                            close()
+                        }
+
+                        drawPath(
+                            path = fill,
+                            brush = Brush.verticalGradient(
+                                listOf(accent.copy(alpha = 0.25f), Color.Transparent)
+                            ),
+                            alpha = animationProgress
+                        )
+
+                        drawPath(
+                            path = path,
+                            color = accent,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
+                            alpha = animationProgress
+                        )
+
+                        // Puntos en la línea
+                        values.take((values.size * animationProgress).toInt())
+                            .forEachIndexed { i, v ->
+                                val x = i * step
+                                val y = h - (v / maxValue) * h
+                                drawCircle(
+                                    color = accent,
+                                    radius = 4.dp.toPx(),
+                                    center = Offset(x, y)
+                                )
+                            }
+                    }
+                }
+            }
+
+            // Eje X (fechas)
+            Spacer(Modifier.height(8.dp))
+            val maxLabels = 6
+            val stride = ((sortedDays.size + maxLabels - 1) / maxLabels).coerceAtLeast(1)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                sortedDays.indices
+                    .filter { it % stride == 0 || it == sortedDays.lastIndex }
+                    .forEach { i ->
+                        val labelDate = dayKeyFormat.parse(sortedDays[i])
+                        val label =
+                            labelDate?.let { xLabelFormat.format(it) } ?: sortedDays[i].substring(5)
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall.copy(color = onSurfaceVariant)
+                        )
+                    }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CallerTypeDonutChart(breakdown: com.humanjuan.iog26.ui.CallerBreakdown) {
+    val strings = LocalStrings.current
+    val anonymous = breakdown.anonymous
+    val unknown = breakdown.unknownContacts
+    val known = breakdown.known
+    val total = (anonymous + unknown + known).coerceAtLeast(1)
+
+    val surface = MaterialTheme.colorScheme.surface
+    val colors = listOf(indicatorPalette[2], indicatorPalette[0], indicatorPalette[1])
+
+    val animatedAnon by animateFloatAsState(
+        targetValue = anonymous.toFloat(),
+        animationSpec = tween(1000)
+    )
+    val animatedUnknown by animateFloatAsState(
+        targetValue = unknown.toFloat(),
+        animationSpec = tween(1000)
+    )
+    val animatedKnown by animateFloatAsState(
+        targetValue = known.toFloat(),
+        animationSpec = tween(1000)
+    )
+    val animatedTotal by animateFloatAsState(
+        targetValue = total.toFloat(),
+        animationSpec = tween(800)
+    )
+
+    val sum = (anonymous + unknown + known).toFloat().coerceAtLeast(1f)
+    val sweeps = listOf(
+        360f * (animatedAnon / sum),
+        360f * (animatedUnknown / sum),
+        360f * (animatedKnown / sum)
+    )
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(
+                min = 180.dp,
+                max = 200.dp
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        ) {
+            Text(
+                strings.chartByCallerType,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+            Spacer(Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(modifier = Modifier.size(90.dp)) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        var start = -90f
+                        sweeps.forEachIndexed { i, angle ->
+                            drawArc(
+                                color = colors[i],
+                                startAngle = start,
+                                sweepAngle = angle,
+                                useCenter = true
+                            )
+                            start += angle
+                        }
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                listOf(
+                                    surface,
+                                    surface.copy(alpha = 0.8f)
+                                )
+                            ),
+                            radius = size.minDimension * 0.35f,
+                            center = center
+                        )
+                    }
+                    Text(
+                        text = animatedTotal.toInt().toString(),
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(
+                        strings.anonymousCaller to anonymous,
+                        strings.unknownContactsLabel to unknown,
+                        strings.knownCaller to known
+                    ).forEachIndexed { i, (label, count) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier
+                                    .size(12.dp)
+                                    .background(colors[i], RoundedCornerShape(2.dp))
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("$label: $count", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CountriesCard(items: List<com.humanjuan.iog26.ui.CountryStat>) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                text = "Top países",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Spacer(Modifier.height(8.dp))
+            val max = (items.maxOfOrNull { it.count } ?: 1).toFloat()
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items.forEach { c ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(c.countryName, modifier = Modifier
+                            .widthIn(min = 80.dp)
+                            .weight(1f))
+                        val ratio = (c.count / max).coerceIn(0f, 1f)
+                        Box(
+                            modifier = Modifier
+                                .weight(2f)
+                                .height(10.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                    RoundedCornerShape(50)
+                                )
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(ratio)
+                                    .background(
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(50)
+                                    )
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text("${c.count}", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickFilterRow(selectedDays: Long, onSelect: (Long) -> Unit) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val options = listOf(
+            0L to strings.filterToday,
+            7L to strings.filter7d,
+            15L to strings.filter15d,
+            30L to strings.filter30d
+        )
+        options.forEachIndexed { index, (days, label) ->
+            val selected = selectedDays == days
+            AssistChip(
+                onClick = { onSelect(days) },
+                label = { Text(label) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+                    labelColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            )
+            if (index < options.lastIndex) Spacer(Modifier.width(8.dp))
         }
     }
 }

@@ -3,8 +3,7 @@ package com.humanjuan.iog26.ui.theme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
-
-// Minimal i18n without Android resources: CompositionLocal-based strings.
+//import androidx.compose.ui.input.pointer.HistoricalChange
 
 data class Strings(
     val appTitle: String,
@@ -20,10 +19,18 @@ data class Strings(
     val groupBlocking: String,
     val blockUnknown: String,
     val blockUnknownSub: String,
+    // New split toggles
+    val blockAnonymous: String,
+    val blockAnonymousSub: String,
+    val blockUnknownContacts: String,
+    val blockUnknownContactsSub: String,
     val skipCallLog: String,
     val skipCallLogSub: String,
     val skipNotif: String,
     val skipNotifSub: String,
+
+    // Settings intro/UX
+    val settingsIntro: String,
 
     val groupDigest: String,
     val digestEnable: String,
@@ -38,6 +45,7 @@ data class Strings(
     val save: String,
     val cancel: String,
     val delete: String,
+    val change: String,
 
     val prefixesTitle: String,
     val searchPrefixPlaceholder: String,
@@ -60,9 +68,9 @@ data class Strings(
     val themeSunset: String,
     val themeViolet: String,
 
-    val blockedOnTemplate: String, // e.g., "Bloqueado el %s" / "Blocked on %s"
-    val totalTemplate: String,     // e.g., "%d Total" / "Total: %d"
-    val deletedNumberTemplate: String, // e.g., "Número eliminado: %s" / "Number deleted: %s"
+    val blockedOnTemplate: String,
+    val totalTemplate: String,
+    val deletedNumberTemplate: String,
 
     // History screen labels
     val historySummaryTitle: String,
@@ -72,12 +80,37 @@ data class Strings(
     val unknownCaller: String,
     val metricsTotal: String,
     val metricsAvgPerDay: String,
-    val metricsActiveDays: String,
+    val metricsTotalCountries: String,
     val metricsLast: String,
+    val metricBlockNumbers: String,
+    val metricBlockPrefixes: String,
 
     // History extras (charts)
     val chartByCallerType: String,
     val knownCaller: String,
+    // New: caller breakdown labels
+    val anonymousCaller: String,
+    val unknownContactsLabel: String,
+
+    // Quick filter buttons labels
+    val filterToday: String,
+    val filter7d: String,
+    val filter15d: String,
+    val filter30d: String,
+
+    // Settings snackbars/messages
+    val snackAnonymousOn: String,
+    val snackAnonymousOff: String,
+    val snackUnknownContactsOn: String,
+    val snackUnknownContactsOff: String,
+    val snackLogOn: String,
+    val snackLogOff: String,
+    val snackNotifyOn: String,
+    val snackNotifyOff: String,
+    val snackDigestOn: String,
+    val snackDigestOff: String,
+    val snackDigestRequiresO: String,
+    val snackDigestTimeSet: String,
 
     // Settings: System info
     val systemInfoTitle: String,
@@ -87,7 +120,11 @@ data class Strings(
     val systemDevice: String,
     val systemLibraries: String,
 
-    // App dedication message (about logo tap)
+    // Privacy policy
+    val privacyTitle: String,
+    val privacyOpenLabel: String,
+
+    // App dedication message
     val dedicationMessage: String
 )
 
@@ -105,10 +142,17 @@ val StringsEs = Strings(
     groupBlocking = "Bloqueo de llamadas",
     blockUnknown = "Bloquear números desconocidos",
     blockUnknownSub = "Silencia o filtra llamadas sin ID u ocultas",
-    skipCallLog = "No registrar llamadas bloqueadas",
-    skipCallLogSub = "Evita entradas en el historial del teléfono",
-    skipNotif = "Sin notificación al bloquear",
-    skipNotifSub = "No mostrar aviso al bloquear llamadas",
+    blockAnonymous = "Bloquear llamadas anónimas",
+    blockAnonymousSub = "Bloquea llamadas sin identificador de llamante (privadas/ocultas)",
+    blockUnknownContacts = "Bloquear números desconocidos",
+    blockUnknownContactsSub = "Bloquea números que no estén en tus contactos",
+    skipCallLog = "Registrar llamadas bloqueadas",
+    skipCallLogSub = "Crear una entrada en el historial del teléfono cuando se bloquee",
+    skipNotif = "Notificación de llamadas bloqueadas",
+    skipNotifSub = "Mostrar una notificación cuando se bloquee una llamada",
+
+    // Settings intro/UX
+    settingsIntro = "Personaliza tu experiencia y preferencias.",
 
     groupDigest = "Resumen diario",
     digestEnable = "Activar resumen de bloqueos",
@@ -123,6 +167,8 @@ val StringsEs = Strings(
     save = "Guardar",
     cancel = "Cancelar",
     delete = "Eliminar",
+    change = "Cambiar",
+
 
     prefixesTitle = "Prefijos bloqueados",
     searchPrefixPlaceholder = "Buscar (+56 800*, 800* NSN, etc.)",
@@ -151,18 +197,43 @@ val StringsEs = Strings(
 
     // History screen labels
     historySummaryTitle = "Resumen de bloqueos",
-    historySummarySubtitle = "Estadísticas y actividad reciente",
+    historySummarySubtitle = "Estadísticas y actividad reciente (7d)",
     recentEvents = "Eventos recientes",
     chartBlocksPerDay = "Bloqueos por día",
     unknownCaller = "Desconocido",
     metricsTotal = "Total",
     metricsAvgPerDay = "Promedio/día",
-    metricsActiveDays = "Días activos",
+    metricsTotalCountries = "Número de países",
     metricsLast = "Último",
+    metricBlockNumbers = "Números bloqueados",
+    metricBlockPrefixes = "Sufijos Bloqueados",
 
     // History extras (charts)
     chartByCallerType = "Por tipo de llamante",
     knownCaller = "Conocido",
+    // New labels
+    anonymousCaller = "Anónimas",
+    unknownContactsLabel = "Desconocidos",
+
+    // Quick filter buttons labels
+    filterToday = "Hoy",
+    filter7d = "7d",
+    filter15d = "15d",
+    filter30d = "30d",
+
+    // Settings snackbars/messages
+    snackAnonymousOn = "Bloqueo de llamadas anónimas ACTIVADO",
+    snackAnonymousOff = "Bloqueo de llamadas anónimas DESACTIVADO",
+    snackUnknownContactsOn = "Bloquear números que no estén en tus contactos: ACTIVADO",
+    snackUnknownContactsOff = "Bloquear números que no estén en tus contactos: DESACTIVADO",
+    snackLogOn = "Registrar en historial: ACTIVADO",
+    snackLogOff = "Registrar en historial: DESACTIVADO",
+    snackNotifyOn = "Notificación de bloqueos: ACTIVADA",
+    snackNotifyOff = "Notificación de bloqueos: DESACTIVADA",
+    snackDigestOn = "Resumen diario ACTIVADO",
+    snackDigestOff = "Resumen diario DESACTIVADO",
+    snackDigestRequiresO = "El resumen diario requiere Android 8.0+ (no se puede programar en este dispositivo)",
+    snackDigestTimeSet = "Hora del resumen: %02d:%02d",
 
     // Settings: System info
     systemInfoTitle = "Información del sistema",
@@ -171,6 +242,11 @@ val StringsEs = Strings(
     systemAndroidVersion = "Versión de Android",
     systemDevice = "Dispositivo",
     systemLibraries = "Librerías",
+
+    // Privacy policy (new)
+    privacyTitle = "Políticas de privacidad",
+    privacyOpenLabel = "Ver políticas de privacidad",
+
     dedicationMessage = "Aplicación dedicada a mi amigo OG, para que también pueda disfrutar en Android esas funciones mágicas que Apple ya perfeccionó hace tiempo."
 )
 
@@ -188,10 +264,17 @@ val StringsEn = Strings(
     groupBlocking = "Call blocking",
     blockUnknown = "Block unknown/private",
     blockUnknownSub = "Silence or filter calls without caller ID",
-    skipCallLog = "Skip call log on block",
-    skipCallLogSub = "Avoid entries in phone history",
-    skipNotif = "Skip notification on block",
-    skipNotifSub = "Do not show a notification when blocking",
+    blockAnonymous = "Block anonymous/private",
+    blockAnonymousSub = "Block calls without caller ID (private/hidden)",
+    blockUnknownContacts = "Block unknown numbers",
+    blockUnknownContactsSub = "Block numbers not in your contacts",
+    skipCallLog = "Log blocked calls",
+    skipCallLogSub = "Create a phone call log entry for blocked calls",
+    skipNotif = "Notification for blocked calls",
+    skipNotifSub = "Show a notification when a call is blocked",
+
+    // Settings intro/UX
+    settingsIntro = "Customize your experience and preferences.",
 
     groupDigest = "Daily digest",
     digestEnable = "Enable daily summary",
@@ -206,6 +289,7 @@ val StringsEn = Strings(
     save = "Save",
     cancel = "Cancel",
     delete = "Delete",
+    change = "Change",
 
     prefixesTitle = "Blocked prefixes",
     searchPrefixPlaceholder = "Search (+1 800*, 800* NSN, etc.)",
@@ -234,18 +318,43 @@ val StringsEn = Strings(
 
     // History screen labels
     historySummaryTitle = "Block summary",
-    historySummarySubtitle = "Statistics and recent activity",
+    historySummarySubtitle = "Statistics and recent activity (7d)",
     recentEvents = "Recent events",
     chartBlocksPerDay = "Blocks per day",
     unknownCaller = "Unknown",
     metricsTotal = "Total",
     metricsAvgPerDay = "Avg/day",
-    metricsActiveDays = "Active days",
+    metricsTotalCountries = "Number of countries",
     metricsLast = "Last",
+    metricBlockNumbers = "Blocked numbers",
+    metricBlockPrefixes = "Blocked prefixes",
 
     // History extras (charts)
     chartByCallerType = "By caller type",
     knownCaller = "Known",
+    // New labels
+    anonymousCaller = "Anonymous",
+    unknownContactsLabel = "Unknown",
+
+    // Quick filter buttons labels
+    filterToday = "Today",
+    filter7d = "7d",
+    filter15d = "15d",
+    filter30d = "30d",
+
+    // Settings snackbars/messages
+    snackAnonymousOn = "Anonymous call blocking ENABLED",
+    snackAnonymousOff = "Anonymous call blocking DISABLED",
+    snackUnknownContactsOn = "Block numbers not in contacts: ENABLED",
+    snackUnknownContactsOff = "Block numbers not in contacts: DISABLED",
+    snackLogOn = "Log to call history: ENABLED",
+    snackLogOff = "Log to call history: DISABLED",
+    snackNotifyOn = "Block notifications: ENABLED",
+    snackNotifyOff = "Block notifications: DISABLED",
+    snackDigestOn = "Daily summary ENABLED",
+    snackDigestOff = "Daily summary DISABLED",
+    snackDigestRequiresO = "Daily summary requires Android 8.0+ (cannot schedule on this device)",
+    snackDigestTimeSet = "Summary time: %02d:%02d",
 
     // Settings: System info
     systemInfoTitle = "System info",
@@ -254,6 +363,11 @@ val StringsEn = Strings(
     systemAndroidVersion = "Android version",
     systemDevice = "Device",
     systemLibraries = "Libraries",
+
+    // Privacy policy (new)
+    privacyTitle = "Privacy policy",
+    privacyOpenLabel = "View privacy policy",
+
     dedicationMessage = "Application dedicated to my friend OG, so he can also enjoy on Android those magical features that Apple perfected long ago."
 )
 
@@ -271,10 +385,17 @@ val StringsIt = Strings(
     groupBlocking = "Blocco chiamate",
     blockUnknown = "Blocca sconosciuti/privati",
     blockUnknownSub = "Silenzia o filtra le chiamate senza ID chiamante",
-    skipCallLog = "Nascondi nel registro quando si blocca",
-    skipCallLogSub = "Evita voci nella cronologia del telefono",
-    skipNotif = "Nessuna notifica al blocco",
-    skipNotifSub = "Non mostrare una notifica quando si blocca",
+    blockAnonymous = "Blocca chiamate anonime",
+    blockAnonymousSub = "Blocca chiamate senza ID chiamante (private/nascoste)",
+    blockUnknownContacts = "Blocca numeri sconosciuti",
+    blockUnknownContactsSub = "Blocca numeri che non sono nei tuoi contatti",
+    skipCallLog = "Registrare chiamate bloccate",
+    skipCallLogSub = "Crea una voce nel registro chiamate quando si blocca",
+    skipNotif = "Notifica per chiamate bloccate",
+    skipNotifSub = "Mostra una notifica quando una chiamata viene bloccata",
+
+    // Settings intro/UX
+    settingsIntro = "Personalizza la tua esperienza e preferenze.",
 
     groupDigest = "Riepilogo giornaliero",
     digestEnable = "Abilita riepilogo giornaliero",
@@ -289,6 +410,7 @@ val StringsIt = Strings(
     save = "Salva",
     cancel = "Annulla",
     delete = "Elimina",
+    change = "Cambia",
 
     prefixesTitle = "Prefissi bloccati",
     searchPrefixPlaceholder = "Cerca (+39 800*, 800* NSN, ecc.)",
@@ -317,18 +439,43 @@ val StringsIt = Strings(
 
     // History screen labels
     historySummaryTitle = "Riepilogo blocchi",
-    historySummarySubtitle = "Statistiche e attività recente",
+    historySummarySubtitle = "Statistiche e attività recente (7d)",
     recentEvents = "Eventi recenti",
     chartBlocksPerDay = "Blocchi per giorno",
     unknownCaller = "Sconosciuto",
     metricsTotal = "Totale",
     metricsAvgPerDay = "Media/giorno",
-    metricsActiveDays = "Giorni attivi",
+    metricsTotalCountries = "Numero di paesi",
     metricsLast = "Ultimo",
+    metricBlockNumbers = "Numeri bloccati",
+    metricBlockPrefixes = "Prefissi bloccati",
 
     // History extras (charts)
     chartByCallerType = "Per tipo chiamante",
     knownCaller = "Conosciuto",
+    // New labels
+    anonymousCaller = "Anonime",
+    unknownContactsLabel = "Sconosciuto",
+
+    // Quick filter buttons labels
+    filterToday = "Oggi",
+    filter7d = "7g",
+    filter15d = "15g",
+    filter30d = "30g",
+
+    // Settings snackbars/messages
+    snackAnonymousOn = "Blocco chiamate anonime ATTIVATO",
+    snackAnonymousOff = "Blocco chiamate anonime DISATTIVATO",
+    snackUnknownContactsOn = "Blocca numeri non nei contatti: ATTIVATO",
+    snackUnknownContactsOff = "Blocca numeri non nei contatti: DISATTIVATO",
+    snackLogOn = "Registrazione nel registro chiamate: ATTIVATA",
+    snackLogOff = "Registrazione nel registro chiamate: DISATTIVATA",
+    snackNotifyOn = "Notifiche di blocco: ATTIVATE",
+    snackNotifyOff = "Notifiche di blocco: DISATTIVATE",
+    snackDigestOn = "Riepilogo giornaliero ATTIVATO",
+    snackDigestOff = "Riepilogo giornaliero DISATTIVATO",
+    snackDigestRequiresO = "Il riepilogo giornaliero richiede Android 8.0+ (non programmabile su questo dispositivo)",
+    snackDigestTimeSet = "Ora del riepilogo: %02d:%02d",
 
     // Settings: System info
     systemInfoTitle = "Info di sistema",
@@ -337,6 +484,11 @@ val StringsIt = Strings(
     systemAndroidVersion = "Versione Android",
     systemDevice = "Dispositivo",
     systemLibraries = "Librerie",
+
+    // Privacy policy (new)
+    privacyTitle = "Informativa sulla privacy",
+    privacyOpenLabel = "Vedi informativa sulla privacy",
+
     dedicationMessage = "Applicazione dedicata al mio amico OG, così può godersi anche su Android quelle funzioni magiche che Apple ha perfezionato da tempo."
 )
 

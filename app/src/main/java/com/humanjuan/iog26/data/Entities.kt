@@ -6,9 +6,15 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "settings")
 data class Settings(
     @PrimaryKey val id: Int = 0,
-    val blockUnknownEnabled: Boolean = true,
-    val skipCallLogOnBlock: Boolean = false,
-    val skipNotificationOnBlock: Boolean = true
+    // Separate controls:
+    // - blockAnonymousEnabled: block callers without caller ID (restricted/unknown/private). Enabled by default.
+    // - blockUnknownContactsEnabled: block numbers not found in contacts. Disabled by default.
+    // - logBlockedCallsEnabled: create a phone call log entry for blocked calls. Enabled by default.
+    // - notifyOnBlockEnabled: show a notification when a call is blocked. Enabled by default.
+    val blockAnonymousEnabled: Boolean = true,
+    val blockUnknownContactsEnabled: Boolean = false,
+    val logBlockedCallsEnabled: Boolean = true,
+    val notifyOnBlockEnabled: Boolean = true
 )
 
 @Entity(tableName = "blocked_numbers")
