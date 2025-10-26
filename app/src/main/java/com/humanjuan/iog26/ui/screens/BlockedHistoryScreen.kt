@@ -627,7 +627,7 @@ private fun CountriesCard(items: List<com.humanjuan.iog26.ui.CountryStat>) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                text = "Top países",
+                text = LocalStrings.current.topCountries,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
             Spacer(Modifier.height(8.dp))

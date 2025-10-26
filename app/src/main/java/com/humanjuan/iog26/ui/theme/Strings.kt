@@ -91,6 +91,8 @@ data class Strings(
     // New: caller breakdown labels
     val anonymousCaller: String,
     val unknownContactsLabel: String,
+    // New: Top countries card title
+    val topCountries: String,
 
     // Quick filter buttons labels
     val filterToday: String,
@@ -214,6 +216,8 @@ val StringsEs = Strings(
     // New labels
     anonymousCaller = "Anónimas",
     unknownContactsLabel = "Desconocidos",
+    // New: Top countries card title
+    topCountries = "Top países",
 
     // Quick filter buttons labels
     filterToday = "Hoy",
@@ -335,6 +339,8 @@ val StringsEn = Strings(
     // New labels
     anonymousCaller = "Anonymous",
     unknownContactsLabel = "Unknown",
+    // New: Top countries card title
+    topCountries = "Top countries",
 
     // Quick filter buttons labels
     filterToday = "Today",
@@ -456,6 +462,8 @@ val StringsIt = Strings(
     // New labels
     anonymousCaller = "Anonime",
     unknownContactsLabel = "Sconosciuto",
+    // New: Top countries card title
+    topCountries = "Paesi principali",
 
     // Quick filter buttons labels
     filterToday = "Oggi",
