@@ -9,30 +9,40 @@
 
 </div>
 
-iOG26 is a simple Android app designed to block unwanted phone calls automatically. It helps you maintain your peace by filtering out spam, unknown callers and specific numbers you choose to block.
+iOG26 is a simple Android app designed to block unwanted phone calls automatically. It helps you maintain your peace by filtering out spam, anonymous callers, unknown (not-in-contacts) callers, and specific numbers/prefixes you choose to block.
 
 ## Key Features
 
-- **Block hidden/anonymous callers:** Automatically block calls with hidden/withheld caller ID or when the system marks the presentation as restricted/unknown/payphone. Note: this does not mean “not in your contacts”.
+- **Block anonymous/private callers:** Automatically block calls with hidden/withheld caller ID or when the system marks the presentation as restricted/unknown/payphone. This is different from “not in your contacts”.
+- **Block unknown numbers (not in contacts):** New. Optionally block any number that is not saved in your contacts. Requires READ_CONTACTS permission.
 - **Custom Blocklists:**
     - **Numbers:** Add specific phone numbers to a personal blocklist.
     - **Prefixes:** Block all calls that start with a certain country or area code (e.g., +1-800).
-- **Call History:** See a detailed history of all the calls that have been blocked by the app, including how many times each number has tried to call.
+- **History & Dashboard:** A detailed history and a new dashboard with animated charts (blocks per day, caller type breakdown), key metrics (total, avg/day, number of countries, last block date/time), and a Top Countries card.
 - **Daily Digest:** Get a daily notification that summarizes all the blocked call activity from the day.
 - **Customizable Settings:**
-    - Choose whether or not blocked calls appear in your phone's call log.
+    - Choose whether blocked calls appear in your phone's call log.
     - Decide if you want to receive a silent notification when a call is blocked.
     - Set the time for your daily digest.
+- **Internationalization (ES/EN/IT):** Complete translations for Spanish, English and Italian.
 
 ### How Call Blocking Works
 - The checks are performed in this order:
   1) Is the call anonymous/hidden and is that setting enabled?
   2) Is the number in the blocked numbers list?
   3) Does it start with a blocked prefix?
+  4) If the "Block unknown numbers" setting is enabled, is the number NOT in your contacts?
 
 ### Privacy
 - All decisions are made on-device. Blocklists and history are stored locally using Room.
 - The app does not upload your call data to any server.
+- Dedicated in-app Privacy Policy screen, localized in Spanish, English, and Italian. The full policy text is bundled offline and shown from Settings.
+
+### Permissions
+- READ_CONTACTS: Required only if you enable "Block unknown numbers" (to check whether a caller exists in your contacts). Requested at runtime on first enable.
+- POST_NOTIFICATIONS (Android 13+): For optional notifications when a call is blocked and for the daily digest.
+- RECEIVE_BOOT_COMPLETED: To re-schedule the daily digest after device reboot.
+- Call screening role: The app must be set as the default Caller ID & spam app so Android routes calls to the screening service.
 
 ### Limitations & Compatibility
 - iOG26 must be set as the default “Caller ID & spam” app; otherwise, Android won’t invoke the screening service.
@@ -57,7 +67,7 @@ This section details the app's architecture and the technical flow behind the ca
 
 - **`UI (Jetpack Compose)`**: The entire user interface is built with Jetpack Compose, a modern, declarative UI toolkit. `ViewModel`s are used to manage the state and logic for each screen, exposing data to the UI via `StateFlow`.
 
-- **`BroadcastReceiver`**: Used to trigger the daily digest notification. An `AlarmManager` is scheduled to send a broadcast at a user-defined time, which is then caught by the receiver to create and display the summary notification.
+- **`WorkManager` + `BroadcastReceiver`**: A periodic/background task schedules the daily digest. On boot, `BootReceiver` re-initializes scheduling. The worker queries recent blocked events and posts a localized summary notification at the user-defined time.
 
 ### How Call Blocking Works
 
@@ -69,7 +79,7 @@ The app intervenes in the native call flow at the earliest possible moment, whic
 
 3.  **Real-Time Decision:** Inside `onScreenCall`, the service receives the incoming phone number.
     - The service immediately queries the `BlockRepository` to check the number against the user's rules stored in the Room database.
-    - The checks are performed in a specific order: Is the number in the blocked numbers list? Does it start with a blocked prefix? Is the "Block Unknown Callers" feature on and is this number not in the user's contacts?
+    - The checks are performed in a specific order: Is it anonymous/private (if enabled)? Is the number in the blocked numbers list? Does it start with a blocked prefix? If "Block unknown numbers" is enabled and the app has READ_CONTACTS permission, is the number not found in the user's contacts?
 
 4.  **Executing the Block:**
     - If any of the rules match, the service constructs a `CallResponse` with `setDisallowCall(true)`. This instructs the system to terminate the call immediately and silently.
