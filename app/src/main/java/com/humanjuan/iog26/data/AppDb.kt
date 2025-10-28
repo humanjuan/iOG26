@@ -15,8 +15,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BlockedPrefixRule::class,
         BlockedEvent::class
     ],
-    version = 3,
-    exportSchema = false
+    version = 4,
+    exportSchema = true
 )
 abstract class AppDb : RoomDatabase() {
     abstract fun settings(): SettingsDao
@@ -37,12 +37,16 @@ abstract class AppDb : RoomDatabase() {
                 ensureSchema(db)
             }
         }
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                ensureSchema(db)
+            }
+        }
 
         fun get(ctx: Context): AppDb =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(ctx, AppDb::class.java, "app.db")
-                    // Replace destructive fallback with explicit migrations to keep data
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { INSTANCE = it }
             }
