@@ -422,7 +422,9 @@ private fun ThemeRow(current: String, onSelect: (String) -> Unit) {
         "GREEN" to LocalStrings.current.themeGreen,
         "NAVY" to LocalStrings.current.themeNavy,
         "SUNSET" to LocalStrings.current.themeSunset,
-        "VIOLET" to LocalStrings.current.themeViolet
+        "VIOLET" to LocalStrings.current.themeViolet,
+        "IOG26" to LocalStrings.current.themeIOG26,
+        "ROSE" to LocalStrings.current.themeRose
     )
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(

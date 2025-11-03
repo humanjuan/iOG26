@@ -61,6 +61,8 @@ class MainActivity : ComponentActivity() {
                 "NAVY" -> AppThemeOption.NAVY
                 "SUNSET" -> AppThemeOption.SUNSET
                 "VIOLET" -> AppThemeOption.VIOLET
+                "IOG26" -> AppThemeOption.IOG26
+                "ROSE" -> AppThemeOption.ROSE
                 else -> AppThemeOption.GREEN
             }
             IOG26Theme(appTheme = theme) {

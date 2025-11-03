@@ -67,6 +67,8 @@ data class Strings(
     val themeNavy: String,
     val themeSunset: String,
     val themeViolet: String,
+    val themeIOG26: String,
+    val themeRose: String,
 
     val blockedOnTemplate: String,
     val totalTemplate: String,
@@ -192,6 +194,9 @@ val StringsEs = Strings(
     themeNavy = "Navy",
     themeSunset = "Amanecer",
     themeViolet = "Violeta",
+    themeIOG26 = "IOG26",
+    themeRose = "Rosa",
+
 
     blockedOnTemplate = "Bloqueado el %s",
     totalTemplate = "%d Total",
@@ -315,6 +320,8 @@ val StringsEn = Strings(
     themeNavy = "Navy",
     themeSunset = "Sunset",
     themeViolet = "Violet",
+    themeIOG26 = "IOG26",
+    themeRose = "Rose",
 
     blockedOnTemplate = "Blocked on %s",
     totalTemplate = "Total: %d",
@@ -438,6 +445,9 @@ val StringsIt = Strings(
     themeNavy = "Blu Navy",
     themeSunset = "Tramonto",
     themeViolet = "Viola",
+    themeIOG26 = "IOG26",
+    themeRose = "Rosa",
+
 
     blockedOnTemplate = "Bloccato il %s",
     totalTemplate = "Totale: %d",
