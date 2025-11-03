@@ -20,27 +20,23 @@ import java.time.ZonedDateTime
 import java.util.Calendar
 import java.util.Locale
 
-// Ranking por número
  data class BlockedNumberGroup(
     val number: String,
     val count: Int,
     val mostRecentTimestamp: Long
 )
 
-// Inventario de reglas
  data class InventoryCounts(
     val blockedNumbers: Int = 0,
     val blockedPrefixes: Int = 0
 )
 
-// Desglose por tipo de llamante
  data class CallerBreakdown(
-    val anonymous: Int = 0,        // sin caller ID (e164 null/blank)
-    val unknownContacts: Int = 0,  // no está en contactos (con número)
-    val known: Int = 0             // en contactos
+    val anonymous: Int = 0,
+    val unknownContacts: Int = 0,
+    val known: Int = 0
 )
 
-// Estadística por país
  data class CountryStat(
     val regionCode: String,
     val countryName: String,

@@ -26,11 +26,11 @@ val SunsetBg = Color(0xFFFFF3ED)
 val SunsetOn = Color(0xFF2B140D)
 
 // THEME: VIOLET
-val VioletPrimary = Color(0xFF6C63FF)
-val VioletPrimaryDark = Color(0xFF5149CC)
-val VioletSecondary = Color(0xFFB39DDB)
-val VioletTertiary = Color(0xFFEDE7F6)
-val VioletBgDark = Color(0xFF1B1A2E)
+val VioletPrimary = Color(0xFF8E24AA)
+val VioletPrimaryDark = Color(0xFF6A1B9A)
+val VioletSecondary = Color(0xFFBA68C8)
+val VioletTertiary = Color(0xFFF3E5F5)
+val VioletBgDark = Color(0xFF140E1A)
 val VioletOn = Color(0xFFFFFFFF)
 
 // Supporting neutrals derived to complement the palette

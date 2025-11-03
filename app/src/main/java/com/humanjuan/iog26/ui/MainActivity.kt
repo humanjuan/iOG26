@@ -8,9 +8,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.humanjuan.iog26.ui.theme.AppThemeOption
 import com.humanjuan.iog26.ui.theme.IOG26Theme
 import com.humanjuan.iog26.ui.theme.ProvidePrivacy
@@ -32,6 +35,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(RoleManager::class.java)
@@ -62,7 +66,9 @@ class MainActivity : ComponentActivity() {
             IOG26Theme(appTheme = theme) {
                 ProvideStrings(language = prefs.value.language) {
                     ProvidePrivacy(language = prefs.value.language) {
-                        AppNav(modifier = Modifier)
+                        AppNav(
+                            modifier = Modifier.windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.safeDrawing)
+                        )
                     }
                 }
             }

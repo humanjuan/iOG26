@@ -135,7 +135,8 @@ fun AppNav(modifier: Modifier = Modifier) {
                             .padding(end = 10.dp)
                             .size(40.dp)
                     )
-                }
+                },
+                windowInsets = TopAppBarDefaults.windowInsets.exclude(WindowInsets.navigationBars)
             )
         },
         bottomBar = {
@@ -211,12 +212,14 @@ fun BottomNavigationBar(
             color = navSurfaceColor,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+//                .height(64.dp)
                 .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxWidth()
+                    .height(64.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.take(2).forEach { item ->
@@ -224,7 +227,7 @@ fun BottomNavigationBar(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .weight(1f) // Distribute space evenly
+                            .weight(1f)
                             .clip(RoundedCornerShape(50))
                             .clickable { onNavigate(item.route) }
                             .padding(vertical = 2.dp)
