@@ -40,7 +40,7 @@ fun NumberListScreen(
     var showDialog by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val strings = LocalStrings.current
-    val prefsVm: com.humanjuan.iog26.ui.AppPrefsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val prefsVm: com.humanjuan.iog26.ui.AppPrefsViewModel = viewModel()
     val devRegexMode by prefsVm.prefs.collectAsState()
     val showRegex = devRegexMode.devRegexMode
 
@@ -55,7 +55,7 @@ fun NumberListScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0)
     ) { padding ->
-        val prefsVm: com.humanjuan.iog26.ui.AppPrefsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+        val prefsVm: com.humanjuan.iog26.ui.AppPrefsViewModel = viewModel()
         val devRegexMode = prefsVm.prefs.collectAsState().value.devRegexMode
         val items by vm.items.collectAsState()
         val regexItems by vm.regexItems.collectAsState()
