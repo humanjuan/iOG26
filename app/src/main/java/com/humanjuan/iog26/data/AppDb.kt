@@ -13,9 +13,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         Settings::class,
         BlockedNumber::class,
         BlockedPrefixRule::class,
-        BlockedEvent::class
+        BlockedEvent::class,
+        RegexRule::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDb : RoomDatabase() {
@@ -23,6 +24,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun numbers(): BlockedNumberDao
     abstract fun prefixes(): BlockedPrefixDao
     abstract fun events(): BlockedEventDao
+    abstract fun regex(): RegexRuleDao
 
     companion object {
         @Volatile private var INSTANCE: AppDb? = null
@@ -42,11 +44,16 @@ abstract class AppDb : RoomDatabase() {
                 ensureSchema(db)
             }
         }
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                ensureSchema(db)
+            }
+        }
 
         fun get(ctx: Context): AppDb =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(ctx, AppDb::class.java, "app.db")
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -75,6 +82,12 @@ abstract class AppDb : RoomDatabase() {
             createTableIfNotExists(db, "blocked_events", "CREATE TABLE IF NOT EXISTS blocked_events (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, e164 TEXT, ts INTEGER NOT NULL DEFAULT 0)")
             addColumnIfMissing(db, "blocked_events", "e164", "TEXT")
             addColumnIfMissing(db, "blocked_events", "ts", "INTEGER NOT NULL DEFAULT 0")
+
+            // regex_rules
+            createTableIfNotExists(db, "regex_rules", "CREATE TABLE IF NOT EXISTS regex_rules (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, kind TEXT NOT NULL, pattern TEXT NOT NULL, createdAt INTEGER NOT NULL DEFAULT 0)")
+            addColumnIfMissing(db, "regex_rules", "kind", "TEXT NOT NULL")
+            addColumnIfMissing(db, "regex_rules", "pattern", "TEXT NOT NULL")
+            addColumnIfMissing(db, "regex_rules", "createdAt", "INTEGER NOT NULL DEFAULT 0")
         }
 
         private fun createTableIfNotExists(db: SupportSQLiteDatabase, table: String, createSql: String) {

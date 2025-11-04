@@ -16,6 +16,7 @@ interface BlockRepository {
     fun isBlockedNumber(e164: String): Boolean
     fun getBlockedNumbers(): List<String>
     fun getPrefixes(): List<PrefixRule>
+    fun getRegexRules(): List<RegexRule>
 
     companion object {
         /** Obtiene una implementación respaldada por Room para usar las mismas reglas que la UI. */
@@ -37,6 +38,7 @@ private object InMemoryBlockRepository : BlockRepository {
 
     private val numbers = mutableSetOf<String>() // +E164
     private val prefixes = mutableListOf<PrefixRule>()
+    private val regexRules = mutableListOf<RegexRule>()
     private val idGen = AtomicLong(1L)
     private var blockUnknown = false
 
@@ -47,6 +49,7 @@ private object InMemoryBlockRepository : BlockRepository {
     override fun getBlockedNumbers(): List<String> = numbers.toList()
 
     override fun getPrefixes(): List<PrefixRule> = prefixes.toList()
+    override fun getRegexRules(): List<RegexRule> = regexRules.toList()
 
     fun setDefaultRegion(value: String?) { region = value }
     fun setBlockUnknown(enabled: Boolean) { blockUnknown = enabled }
@@ -99,5 +102,9 @@ private class RoomBackedBlockRepository(ctx: Context) : BlockRepository {
                 countryCode = dbRule.countryCode?.toString()
             )
         }
+    }
+
+    override fun getRegexRules(): List<RegexRule> = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+        AppDb.get(appCtx).regex().all()
     }
 }

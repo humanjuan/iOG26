@@ -59,6 +59,27 @@ object CallPolicy {
             }
         }
 
+        // Regex rules (NUMBER/PREFIX) — evaluated before exact numbers and prefix rules
+        val regexRules = repo.getRegexRules()
+        if (!rawNumber.isNullOrBlank() && regexRules.isNotEmpty()) {
+            val defaultRegion = repo.defaultRegion()
+            val e164 = try { Matching.toE164(rawNumber, defaultRegion) } catch (_: Throwable) { null }
+            val nsn = try { Matching.toNSN(rawNumber, defaultRegion) } catch (_: Throwable) { null }
+            val digitsOnly = rawNumber.replace(Regex("[^\\d+]"), "")
+            for (r in regexRules) {
+                val re = try { Regex(r.pattern) } catch (_: Throwable) { null } ?: continue
+                val hit = when (r.kind.uppercase()) {
+                    "NUMBER" -> listOfNotNull(rawNumber, e164, digitsOnly).any { re.containsMatchIn(it) }
+                    "PREFIX" -> listOfNotNull(rawNumber, e164, nsn, digitsOnly).any { re.containsMatchIn(it) }
+                    else -> false
+                }
+                if (hit) {
+                    val reason = if (r.kind.uppercase() == "NUMBER") "regex-number" else "regex-prefix"
+                    return Decision(block = true, reason = reason, shouldSkipCallLog = skipCallLogOnBlock, shouldSkipNotification = skipNotificationOnBlock)
+                }
+            }
+        }
+
         // Números exactos/NSN/short match en lista (usa heurística de libphonenumber)
         val hitNumber = if (!rawNumber.isNullOrBlank()) {
             val blocked = repo.getBlockedNumbers()

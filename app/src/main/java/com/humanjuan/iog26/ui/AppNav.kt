@@ -62,7 +62,7 @@ fun AppNav() {
     var showDedicationDialog by remember { mutableStateOf(false) }
 
     if (showDedicationDialog) {
-        Dialog(onDismissRequest = { }) {
+        Dialog(onDismissRequest = { showDedicationDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -74,11 +74,11 @@ fun AppNav() {
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_iog26),
-                        contentDescription = "Logo",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(72.dp)
-                    )
+                    painter = painterResource(id = R.drawable.ic_iog26),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(72.dp)
+                )
                     Spacer(Modifier.height(24.dp))
                     Text(
                         text = strings.dedicationMessage,
@@ -118,7 +118,7 @@ fun AppNav() {
                 actions = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_iog26),
-                        contentDescription = "Logo",
+                        contentDescription = null,
                         tint = Color.Unspecified,
                         modifier = Modifier
                             .pointerInput(Unit) {
@@ -155,6 +155,10 @@ fun AppNav() {
                 },
                 centerVisible = centerVisible,
                 centerIcon = centerIcon,
+                centerContentDescription = when (effectiveRoute) {
+                    Routes.HISTORY -> strings.cdCenterRefresh
+                    else -> strings.cdCenterAdd
+                },
                 onCenterClick = {
                     when (effectiveRoute) {
                         Routes.HISTORY -> actionHistory?.invoke()
@@ -190,13 +194,15 @@ fun BottomNavigationBar(
     onNavigate: (String) -> Unit,
     centerVisible: Boolean,
     centerIcon: ImageVector,
+    centerContentDescription: String?,
     onCenterClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
     val items = listOf(
-        NavItem("Historial", Icons.Filled.History, Routes.HISTORY),
-        NavItem("Números", Icons.Filled.Shield, Routes.NUMBERS),
-        NavItem("Prefijos", Icons.AutoMirrored.Filled.List, Routes.PREFIXES),
-        NavItem("Ajustes", Icons.Filled.Settings, Routes.SETTINGS)
+        NavItem(strings.navHistory, Icons.Filled.History, Routes.HISTORY),
+        NavItem(strings.navNumbers, Icons.Filled.Shield, Routes.NUMBERS),
+        NavItem(strings.navPrefixes, Icons.AutoMirrored.Filled.List, Routes.PREFIXES),
+        NavItem(strings.navSettings, Icons.Filled.Settings, Routes.SETTINGS)
     )
 
     val navSurfaceColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
@@ -302,7 +308,7 @@ fun BottomNavigationBar(
                         Crossfade(targetState = centerIcon, label = "centerFabIcon") { icn ->
                             Icon(
                                 icn,
-                                contentDescription = "Center action",
+                                contentDescription = centerContentDescription,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -333,7 +339,8 @@ private fun HomeScreen(nav: NavHostController) {
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0)
     ) { padding ->
         val gradient = Brush.verticalGradient(
             listOf(

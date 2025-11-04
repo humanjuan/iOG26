@@ -3,6 +3,7 @@ package com.humanjuan.iog26.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,6 +40,9 @@ fun NumberListScreen(
     var showDialog by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val strings = LocalStrings.current
+    val prefsVm: com.humanjuan.iog26.ui.AppPrefsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val devRegexMode by prefsVm.prefs.collectAsState()
+    val showRegex = devRegexMode.devRegexMode
 
 
     // Register central bottom bar action to open the Add Number dialog
@@ -48,9 +52,13 @@ fun NumberListScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0)
     ) { padding ->
+        val prefsVm: com.humanjuan.iog26.ui.AppPrefsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+        val devRegexMode = prefsVm.prefs.collectAsState().value.devRegexMode
         val items by vm.items.collectAsState()
+        val regexItems by vm.regexItems.collectAsState()
         val filtered = remember(items, query) {
             val q = query.text.trim().lowercase()
             if (q.isEmpty()) items else items.filter { it.e164.lowercase().contains(q) }
@@ -63,12 +71,14 @@ fun NumberListScreen(
             )
         )
 
+        var editingRegex by remember { mutableStateOf<NumbersViewModel.UiRegexRule?>(null) }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradient)
                 .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
+                .padding(horizontal = 20.dp, vertical = 0.dp)
         ) {
 
             SearchBar(
@@ -89,7 +99,7 @@ fun NumberListScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 88.dp)
+                contentPadding = PaddingValues(bottom = 10.dp)
             ) {
                 items(filtered, key = { it.e164 }) { item ->
                     SwipeToDeleteItem(
@@ -102,15 +112,51 @@ fun NumberListScreen(
                         }
                     )
                 }
+
+                if (regexItems.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = LocalStrings.current.regexRulesTitle,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                    items(regexItems, key = { it.id }) { rule ->
+                        RegexRuleSwipeItem(
+                            pattern = rule.pattern,
+                            createdAt = rule.createdAt,
+                            onClick = { editingRegex = rule },
+                            onDelete = { vm.removeRegex(rule.id) }
+                        )
+                    }
+                }
+            }
+
+            if (editingRegex != null) {
+                EditRegexDialog(
+                    initial = editingRegex!!.pattern,
+                    title = LocalStrings.current.editRegexTitle,
+                    onDismiss = { editingRegex = null },
+                    onSave = { newPattern ->
+                        val error = vm.updateRegex(editingRegex!!.id, newPattern)
+                        if (error == null) editingRegex = null else scope.launch { snackbarHostState.showSnackbar(error) }
+                    }
+                )
             }
         }
     }
 
     if (showDialog) {
         AddNumberDialog(
+            showRegex = showRegex,
             onDismiss = { showDialog = false },
-            onSave = { raw ->
-                val error = vm.add(raw)
+            onSave = { raw, regex ->
+                val err1 = if (raw.isNotBlank()) vm.add(raw) else null
+                val err2 = if (!regex.isNullOrBlank()) vm.addRegex(regex) else null
+                val error = err1 ?: err2
                 if (error == null) showDialog = false
                 else scope.launch { snackbarHostState.showSnackbar(error) }
             }
@@ -274,10 +320,12 @@ private fun SearchBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddNumberDialog(
+    showRegex: Boolean,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String, String?) -> Unit
 ) {
     var text by remember { mutableStateOf(TextFieldValue("")) }
+    var regexText by remember { mutableStateOf(TextFieldValue("")) }
     val ctx = LocalContext.current
 
     val contactPicker = rememberLauncherForActivityResult(
@@ -296,7 +344,7 @@ private fun AddNumberDialog(
                 cursor?.use { c ->
                     if (c.moveToFirst()) {
                         val number = c.getString(0)
-                        if (!number.isNullOrBlank()) onSave(number)
+                        if (!number.isNullOrBlank()) onSave(number, null)
                     }
                 }
             } catch (_: Throwable) { }
@@ -337,6 +385,20 @@ private fun AddNumberDialog(
                         cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
+                if (showRegex) {
+                    OutlinedTextField(
+                        value = regexText,
+                        onValueChange = { regexText = it },
+                        label = { Text(LocalStrings.current.regexLabel) },
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
                 Text(
                     LocalStrings.current.addNumberHint,
                     style = MaterialTheme.typography.bodySmall.copy(
@@ -357,7 +419,7 @@ private fun AddNumberDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(text.text.trim()) },
+                onClick = { onSave(text.text.trim(), regexText.text.trim().ifBlank { null }) },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) { Text(LocalStrings.current.save) }
         },
@@ -374,6 +436,127 @@ private fun AddNumberDialog(
     )
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RegexRuleSwipeItem(
+    pattern: String,
+    createdAt: Long,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var dismissed by remember { mutableStateOf(false) }
+    if (!dismissed) {
+        val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = {
+                if (it == SwipeToDismissBoxValue.StartToEnd || it == SwipeToDismissBoxValue.EndToStart) {
+                    dismissed = true
+                    onDelete()
+                    true
+                } else false
+            },
+            positionalThreshold = { it * 0.3f }
+        )
+        SwipeToDismissBox(
+            state = dismissState,
+            enableDismissFromStartToEnd = true,
+            enableDismissFromEndToStart = true,
+            backgroundContent = {
+                val color = when (dismissState.dismissDirection) {
+                    SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> Color(0xFFEF5350)
+                    else -> Color.Transparent
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(color, RoundedCornerShape(20.dp))
+                        .padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = LocalStrings.current.delete,
+                        tint = Color.White
+                    )
+                }
+            },
+            content = {
+                RegexRuleCard(pattern = pattern, createdAt = createdAt, onClick = onClick)
+            }
+        )
+    }
+}
+
+@Composable
+private fun RegexRuleCard(pattern: String, createdAt: Long, onClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+                .clickable { onClick() }
+        ) {
+            Text(
+                text = "/$pattern/",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+            val subtitle = LocalStrings.current.blockedOnTemplate.format(dateFmt(createdAt))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun EditRegexDialog(
+    initial: String,
+    title: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(LocalStrings.current.regexLabel) },
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    cursorColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(text.trim()) }) { Text(LocalStrings.current.save) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(LocalStrings.current.cancel) }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(20.dp)
+    )
+}
 
 private fun dateFmt(ts: Long): String {
     val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())

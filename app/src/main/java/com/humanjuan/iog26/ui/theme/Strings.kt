@@ -76,6 +76,14 @@ data class Strings(
     val themeModeLight: String = "Light",
     val themeModeDark: String = "Dark",
 
+    // Regex dev mode and labels
+    val regexLabel: String = "Regex (optional)",
+    val regexInvalidMessage: String = "Invalid regex",
+    val devRegexOn: String = "Regex mode enabled",
+    val devRegexOff: String = "Regex mode disabled",
+    val regexRulesTitle: String = "Regex rules",
+    val editRegexTitle: String = "Edit regex",
+
     val blockedOnTemplate: String,
     val totalTemplate: String,
     val deletedNumberTemplate: String,
@@ -96,10 +104,10 @@ data class Strings(
     // History extras (charts)
     val chartByCallerType: String,
     val knownCaller: String,
-    // New: caller breakdown labels
+    // caller breakdown labels
     val anonymousCaller: String,
     val unknownContactsLabel: String,
-    // New: Top countries card title
+    // Top countries card title
     val topCountries: String,
 
     // Quick filter buttons labels
@@ -133,6 +141,15 @@ data class Strings(
     // Privacy policy
     val privacyTitle: String,
     val privacyOpenLabel: String,
+
+    // AppBar / Navigation
+    val navHistory: String = "History",
+    val navNumbers: String = "Numbers",
+    val navPrefixes: String = "Prefixes",
+    val navSettings: String = "Settings",
+    val cdOpenPrivacy: String = "Open privacy policy",
+    val cdCenterAdd: String = "Add",
+    val cdCenterRefresh: String = "Refresh",
 
     // App dedication message
     val dedicationMessage: String
@@ -209,6 +226,14 @@ val StringsEs = Strings(
     themeModeLight = "Claro",
     themeModeDark = "Oscuro",
 
+    // Regex
+    regexLabel = "Regex (opcional)",
+    regexInvalidMessage = "Regex inválida",
+    devRegexOn = "Modo Regex ACTIVADO",
+    devRegexOff = "Modo Regex DESACTIVADO",
+    regexRulesTitle = "Reglas Regex",
+    editRegexTitle = "Editar regex",
+
     blockedOnTemplate = "Bloqueado el %s",
     totalTemplate = "%d Total",
     deletedNumberTemplate = "Número eliminado: %s",
@@ -229,10 +254,10 @@ val StringsEs = Strings(
     // History extras (charts)
     chartByCallerType = "Por tipo de llamante",
     knownCaller = "Conocido",
-    // New labels
+    // labels
     anonymousCaller = "Anónimas",
     unknownContactsLabel = "Desconocidos",
-    // New: Top countries card title
+    // Top countries card title
     topCountries = "Top países",
 
     // Quick filter buttons labels
@@ -263,9 +288,18 @@ val StringsEs = Strings(
     systemDevice = "Dispositivo",
     systemLibraries = "Librerías",
 
-    // Privacy policy (new)
+    // Privacy policy
     privacyTitle = "Políticas de privacidad",
     privacyOpenLabel = "Ver políticas de privacidad",
+
+    // Bottom nav and content descriptions
+    navHistory = "Historial",
+    navNumbers = "Números",
+    navPrefixes = "Prefijos",
+    navSettings = "Ajustes",
+    cdOpenPrivacy = "Abrir políticas de privacidad",
+    cdCenterAdd = "Agregar",
+    cdCenterRefresh = "Actualizar",
 
     dedicationMessage = "Aplicación dedicada a mi amigo OG, para que también pueda disfrutar en Android esas funciones mágicas que Apple ya perfeccionó hace tiempo."
 )
@@ -340,6 +374,14 @@ val StringsEn = Strings(
     themeModeLight = "Light",
     themeModeDark = "Dark",
 
+    // Regex
+    regexLabel = "Regex (optional)",
+    regexInvalidMessage = "Invalid regex",
+    devRegexOn = "Regex mode ENABLED",
+    devRegexOff = "Regex mode DISABLED",
+    regexRulesTitle = "Regex rules",
+    editRegexTitle = "Edit regex",
+
     blockedOnTemplate = "Blocked on %s",
     totalTemplate = "Total: %d",
     deletedNumberTemplate = "Number deleted: %s",
@@ -360,10 +402,10 @@ val StringsEn = Strings(
     // History extras (charts)
     chartByCallerType = "By caller type",
     knownCaller = "Known",
-    // New labels
+    // labels
     anonymousCaller = "Anonymous",
     unknownContactsLabel = "Unknown",
-    // New: Top countries card title
+    // Top countries card title
     topCountries = "Top countries",
 
     // Quick filter buttons labels
@@ -394,9 +436,18 @@ val StringsEn = Strings(
     systemDevice = "Device",
     systemLibraries = "Libraries",
 
-    // Privacy policy (new)
+    // Privacy policy
     privacyTitle = "Privacy policy",
     privacyOpenLabel = "View privacy policy",
+
+    // Bottom nav and content descriptions
+    navHistory = "History",
+    navNumbers = "Numbers",
+    navPrefixes = "Prefixes",
+    navSettings = "Settings",
+    cdOpenPrivacy = "Open privacy policy",
+    cdCenterAdd = "Add",
+    cdCenterRefresh = "Refresh",
 
     dedicationMessage = "Application dedicated to my friend OG, so he can also enjoy on Android those magical features that Apple perfected long ago."
 )
@@ -471,6 +522,14 @@ val StringsIt = Strings(
     themeModeLight = "Chiaro",
     themeModeDark = "Scuro",
 
+    // Regex
+    regexLabel = "Regex (opzionale)",
+    regexInvalidMessage = "Regex non valida",
+    devRegexOn = "Modalità Regex ATTIVATA",
+    devRegexOff = "Modalità Regex DISATTIVATA",
+    regexRulesTitle = "Regole Regex",
+    editRegexTitle = "Modifica regex",
+
     blockedOnTemplate = "Bloccato il %s",
     totalTemplate = "Totale: %d",
     deletedNumberTemplate = "Numero eliminato: %s",
@@ -491,10 +550,10 @@ val StringsIt = Strings(
     // History extras (charts)
     chartByCallerType = "Per tipo chiamante",
     knownCaller = "Conosciuto",
-    // New labels
+    // labels
     anonymousCaller = "Anonime",
     unknownContactsLabel = "Sconosciuto",
-    // New: Top countries card title
+    // Top countries card title
     topCountries = "Paesi principali",
 
     // Quick filter buttons labels
@@ -525,7 +584,7 @@ val StringsIt = Strings(
     systemDevice = "Dispositivo",
     systemLibraries = "Librerie",
 
-    // Privacy policy (new)
+    // Privacy policy
     privacyTitle = "Informativa sulla privacy",
     privacyOpenLabel = "Vedi informativa sulla privacy",
 

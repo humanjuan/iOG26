@@ -40,3 +40,11 @@ data class BlockedEvent(
     val e164: String?,
     val ts: Long
 )
+
+@Entity(tableName = "regex_rules")
+data class RegexRule(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kind: String, // "NUMBER" | "PREFIX"
+    val pattern: String,
+    val createdAt: Long
+)

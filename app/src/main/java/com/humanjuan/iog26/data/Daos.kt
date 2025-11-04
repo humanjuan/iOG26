@@ -43,3 +43,21 @@ interface BlockedEventDao {
     @Query("SELECT * FROM blocked_events WHERE ts >= :since ORDER BY ts DESC")
     suspend fun since(since: Long): List<BlockedEvent>
 }
+
+@Dao
+interface RegexRuleDao {
+    @Query("SELECT * FROM regex_rules")
+    suspend fun all(): List<RegexRule>
+
+    @Query("SELECT * FROM regex_rules WHERE kind = :kind ORDER BY createdAt DESC")
+    suspend fun allByKind(kind: String): List<RegexRule>
+
+    @Insert
+    suspend fun add(rule: RegexRule)
+
+    @Query("UPDATE regex_rules SET pattern = :pattern WHERE id = :id")
+    suspend fun updatePattern(id: Long, pattern: String)
+
+    @Query("DELETE FROM regex_rules WHERE id = :id")
+    suspend fun remove(id: Long)
+}

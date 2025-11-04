@@ -25,7 +25,11 @@ class PrefixRulesViewModel(app: Application) : AndroidViewModel(app) {
     private val _items = MutableStateFlow<List<UiPrefixRule>>(emptyList())
     val items: StateFlow<List<UiPrefixRule>> = _items
 
-    init { refresh() }
+    data class UiRegexRule(val id: Long, val pattern: String, val createdAt: Long)
+    private val _regexItems = MutableStateFlow<List<UiRegexRule>>(emptyList())
+    val regexItems: StateFlow<List<UiRegexRule>> = _regexItems
+
+    init { refresh(); refreshRegex() }
 
     fun refresh() = viewModelScope.launch {
         val list = db.prefixes().all().map {
@@ -36,6 +40,10 @@ class PrefixRulesViewModel(app: Application) : AndroidViewModel(app) {
             UiPrefixRule(it.id, label, it.scope, it.countryCode, it.prefixDigits, it.createdAt)
         }.sortedBy { it.label }
         _items.value = list
+    }
+
+    fun refreshRegex() = viewModelScope.launch {
+        _regexItems.value = db.regex().allByKind("PREFIX").map { UiRegexRule(it.id, it.pattern, it.createdAt) }
     }
 
     fun add(prefixDigitsRaw: String, countryCodeInput: String?): String? {
@@ -74,8 +82,43 @@ class PrefixRulesViewModel(app: Application) : AndroidViewModel(app) {
         return null
     }
 
+    fun addRegex(pattern: String): String? {
+        return try {
+            Regex(pattern)
+            viewModelScope.launch {
+                db.regex().add(com.humanjuan.iog26.data.RegexRule(
+                    kind = "PREFIX",
+                    pattern = pattern,
+                    createdAt = System.currentTimeMillis()
+                ))
+                refreshRegex()
+            }
+            null
+        } catch (t: Throwable) {
+            t.message ?: com.humanjuan.iog26.ui.theme.StringsEs.regexInvalidMessage
+        }
+    }
+
+    fun updateRegex(id: Long, pattern: String): String? {
+        return try {
+            Regex(pattern)
+            viewModelScope.launch {
+                db.regex().updatePattern(id, pattern)
+                refreshRegex()
+            }
+            null
+        } catch (t: Throwable) {
+            t.message ?: com.humanjuan.iog26.ui.theme.StringsEs.regexInvalidMessage
+        }
+    }
+
     fun remove(id: Long) = viewModelScope.launch {
         db.prefixes().remove(id)
         refresh()
+    }
+
+    fun removeRegex(id: Long) = viewModelScope.launch {
+        db.regex().remove(id)
+        refreshRegex()
     }
 }

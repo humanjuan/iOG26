@@ -25,6 +25,7 @@ import com.humanjuan.iog26.ui.SettingsViewModel
 import com.humanjuan.iog26.ui.theme.LocalPrivacy
 import com.humanjuan.iog26.ui.theme.LocalStrings
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +43,8 @@ fun SettingsScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = host) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0)
     ) { padding ->
         val gradient = Brush.verticalGradient(
             colors = listOf(
@@ -144,7 +146,25 @@ fun SettingsScreen(
                 val androidVer = "${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})"
                 val device = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}"
 
-                InfoRow(label = strings.systemAppVersion, value = appVersion)
+                val prefsVm2: AppPrefsViewModel = viewModel()
+                val scope = rememberCoroutineScope()
+                var tapCount by remember { mutableStateOf(0) }
+                var lastTapTs by remember { mutableStateOf(0L) }
+                Box(modifier = Modifier.clickable {
+                    val now = System.currentTimeMillis()
+                    tapCount = if (now - lastTapTs < 800) tapCount + 1 else 1
+                    lastTapTs = now
+                    if (tapCount >= 4) {
+                        tapCount = 0
+                        val current = prefsVm2.prefs.value.devRegexMode
+                        prefsVm2.setDevRegexMode(!current)
+                        scope.launch {
+                            host.showSnackbar(if (!current) strings.devRegexOn else strings.devRegexOff)
+                        }
+                    }
+                }) {
+                    InfoRow(label = strings.systemAppVersion, value = appVersion)
+                }
                 InfoRow(label = strings.systemKotlinVersion, value = kotlinVer)
                 InfoRow(label = strings.systemAndroidVersion, value = androidVer)
                 InfoRow(label = strings.systemDevice, value = device)
@@ -263,7 +283,7 @@ fun SettingsScreen(
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Open privacy policy",
+                    contentDescription = strings.cdOpenPrivacy,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
