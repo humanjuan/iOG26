@@ -10,13 +10,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,20 +22,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.humanjuan.iog26.ui.AppPrefsViewModel
 import com.humanjuan.iog26.ui.SettingsViewModel
-import com.humanjuan.iog26.ui.theme.AppThemeOption
 import com.humanjuan.iog26.ui.theme.LocalPrivacy
 import com.humanjuan.iog26.ui.theme.LocalStrings
-import com.humanjuan.iog26.ui.theme.PrivacyEn
-import com.humanjuan.iog26.ui.theme.PrivacyEs
-import com.humanjuan.iog26.ui.theme.PrivacyIt
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     vm: SettingsViewModel = viewModel(),
-    onBack: () -> Unit = {},
-    onOpenMenu: () -> Unit = {}
 ) {
     val state by vm.ui.collectAsState()
     val host = remember { SnackbarHostState() }

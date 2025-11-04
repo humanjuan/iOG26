@@ -4,10 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.humanjuan.iog26.data.PrefixScope
 import com.humanjuan.iog26.ui.PrefixRulesViewModel
 import com.humanjuan.iog26.ui.UiPrefixRule
 import com.humanjuan.iog26.ui.theme.LocalStrings
@@ -31,8 +28,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun PrefixListScreen(
     vm: PrefixRulesViewModel = viewModel(),
-    onBack: () -> Unit = {},
-    onOpenMenu: () -> Unit = {},
     onRegisterCentralAction: (((() -> Unit)) -> Unit)? = null
 ) {
     val snackbarHostState = remember { SnackbarHostState() }

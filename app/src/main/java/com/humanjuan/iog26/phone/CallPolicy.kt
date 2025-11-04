@@ -81,7 +81,6 @@ object CallPolicy {
         }
         if (hitPrefix) return Decision(block = true, reason = "blocked-prefix", shouldSkipCallLog = skipCallLogOnBlock, shouldSkipNotification = skipNotificationOnBlock)
 
-        // Permitir por defecto
         return Decision(block = false, shouldSkipCallLog = skipCallLogOnBlock, shouldSkipNotification = skipNotificationOnBlock)
     }
 
@@ -91,22 +90,42 @@ object CallPolicy {
             .setRejectCall(decision.block)
             .setSkipCallLog(decision.shouldSkipCallLog)
             .setSkipNotification(decision.shouldSkipNotification)
-
-        // En algunos OEMs, silenciar además de rechazar mejora la fiabilidad del bloqueo.
-        // Usamos reflexión para evitar advertencias de API (setSilenceCall existe desde API 29).
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            try {
-                val m = builder.javaClass.getMethod("setSilenceCall", Boolean::class.javaPrimitiveType)
-                m.invoke(builder, decision.block)
-            } catch (_: Throwable) { /* ignore */ }
-        }
+        builder.setSilenceCall(decision.block)
         return builder.build()
     }
-
+    
     private fun isInContacts(context: Context, number: String): Boolean {
         return try {
-            val uri = ContactsContract.PhoneLookup.CONTENT_FILTER_URI.buildUpon()
-                .appendPath(Uri.encode(number))
+            val normalized = try {
+                Matching.toE164(
+                    number,
+                    BlockRepository.get(context).defaultRegion()
+                )
+            } catch (_: Throwable) {
+                number
+            }
+
+            if (queryPhoneLookup(context, normalized)) return true
+
+            val simplified = normalized
+                ?.replace(Regex("[^\\d+]"), "")
+                ?.replace(Regex("^\\+"), "")
+
+            if (queryPhoneLookup(context, simplified)) return true
+
+            queryPhoneLookup(context, number)
+        } catch (t: Throwable) {
+            android.util.Log.w("CallPolicy", "Error checking contacts: ${t.message}")
+            false
+        }
+    }
+
+    private fun queryPhoneLookup(context: Context, raw: String?): Boolean {
+        if (raw.isNullOrBlank()) return false
+        return try {
+            val uri = ContactsContract.PhoneLookup.CONTENT_FILTER_URI
+                .buildUpon()
+                .appendPath(Uri.encode(raw))
                 .build()
             context.contentResolver.query(
                 uri,

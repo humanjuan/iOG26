@@ -20,24 +20,24 @@ import java.time.ZonedDateTime
 import java.util.Calendar
 import java.util.Locale
 
- data class BlockedNumberGroup(
+data class BlockedNumberGroup(
     val number: String,
     val count: Int,
     val mostRecentTimestamp: Long
 )
 
- data class InventoryCounts(
+data class InventoryCounts(
     val blockedNumbers: Int = 0,
     val blockedPrefixes: Int = 0
 )
 
- data class CallerBreakdown(
+data class CallerBreakdown(
     val anonymous: Int = 0,
     val unknownContacts: Int = 0,
     val known: Int = 0
 )
 
- data class CountryStat(
+data class CountryStat(
     val regionCode: String,
     val countryName: String,
     val count: Int
@@ -88,22 +88,31 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
             .groupBy { it.e164 ?: "Unknown" }
             .map {
                 val mostRecent = it.value.maxByOrNull { event -> event.ts }!!
-                BlockedNumberGroup(number = it.key, count = it.value.size, mostRecentTimestamp = mostRecent.ts)
+                BlockedNumberGroup(
+                    number = it.key,
+                    count = it.value.size,
+                    mostRecentTimestamp = mostRecent.ts
+                )
             }
             .sortedByDescending { it.mostRecentTimestamp }
 
         // Inventory
-        _inventory.value = InventoryCounts(blockedNumbers = numbers.size, blockedPrefixes = prefixes.size)
+        _inventory.value =
+            InventoryCounts(blockedNumbers = numbers.size, blockedPrefixes = prefixes.size)
 
         // Caller breakdown (robust contact membership with permission check)
         val ctx = getApplication<Application>()
         val resolver = ctx.contentResolver
-        val hasPerm = ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        val hasPerm = ContextCompat.checkSelfPermission(
+            ctx,
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
         var anonymous = 0
         var unknown = 0
         var known = 0
         // Preload contact numbers once if permission is granted for fallback matching
-        val allContacts: List<String> = if (hasPerm) loadAllContactNumbers(resolver) else emptyList()
+        val allContacts: List<String> =
+            if (hasPerm) loadAllContactNumbers(resolver) else emptyList()
 
         events.forEach { e ->
             val n = e.e164
@@ -114,7 +123,8 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
                 if (inContacts) known++ else unknown++
             }
         }
-        _callerBreakdown.value = CallerBreakdown(anonymous = anonymous, unknownContacts = unknown, known = known)
+        _callerBreakdown.value =
+            CallerBreakdown(anonymous = anonymous, unknownContacts = unknown, known = known)
 
         // Country stats
         val util = PhoneNumberUtil.getInstance()
@@ -160,7 +170,11 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
             .groupBy { it.e164 ?: "Unknown" }
             .map {
                 val mostRecent = it.value.maxByOrNull { event -> event.ts }!!
-                BlockedNumberGroup(number = it.key, count = it.value.size, mostRecentTimestamp = mostRecent.ts)
+                BlockedNumberGroup(
+                    number = it.key,
+                    count = it.value.size,
+                    mostRecentTimestamp = mostRecent.ts
+                )
             }
             .sortedByDescending { it.mostRecentTimestamp }
     }
@@ -170,8 +184,8 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
         return try {
             val numbers = mutableListOf<String>()
             resolver.query(
-                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
                 null,
                 null,
                 null
@@ -205,13 +219,15 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
                 null,
                 null
             )?.use { c -> if (c.moveToFirst()) return true }
-        } catch (_: Throwable) { }
+        } catch (_: Throwable) {
+        }
 
         // Fallback: compare against cached list using PhoneNumberUtils.compare
         for (stored in allContacts) {
             try {
                 if (PhoneNumberUtils.compare(stored, number)) return true
-            } catch (_: Throwable) { }
+            } catch (_: Throwable) {
+            }
         }
         return false
     }

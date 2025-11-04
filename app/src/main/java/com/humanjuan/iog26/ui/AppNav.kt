@@ -1,7 +1,5 @@
 package com.humanjuan.iog26.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
@@ -49,16 +47,14 @@ object Routes {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNav(modifier: Modifier = Modifier) {
+fun AppNav() {
     val nav = rememberNavController()
     val currentBackStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    // Use an effective route to avoid transient null on first frame
     val effectiveRoute = currentRoute ?: Routes.HISTORY
 
     val strings = LocalStrings.current
 
-    // Central dynamic action registered by screens (per-route to avoid flicker)
     var actionHistory by remember { mutableStateOf<(() -> Unit)?>(null) }
     var actionNumbers by remember { mutableStateOf<(() -> Unit)?>(null) }
     var actionPrefixes by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -66,7 +62,7 @@ fun AppNav(modifier: Modifier = Modifier) {
     var showDedicationDialog by remember { mutableStateOf(false) }
 
     if (showDedicationDialog) {
-        Dialog(onDismissRequest = { showDedicationDialog = false }) {
+        Dialog(onDismissRequest = { }) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -180,9 +176,9 @@ fun AppNav(modifier: Modifier = Modifier) {
                 actionHistory = action }) }
             composable(Routes.NUMBERS) { NumberListScreen(onRegisterCentralAction = { action ->
                 actionNumbers = action }) }
-            composable(Routes.PREFIXES) { PrefixListScreen(onBack = {}, onOpenMenu = {}, onRegisterCentralAction = { action ->
+            composable(Routes.PREFIXES) { PrefixListScreen(onRegisterCentralAction = { action ->
                 actionPrefixes = action }) }
-            composable(Routes.SETTINGS) { SettingsScreen(onBack = {}, onOpenMenu = {}) }
+            composable(Routes.SETTINGS) { SettingsScreen() }
             composable(Routes.HOME) { HomeScreen(nav) }
         }
     }
