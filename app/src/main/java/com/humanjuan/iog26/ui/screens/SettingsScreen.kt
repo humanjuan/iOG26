@@ -77,6 +77,11 @@ fun SettingsScreen(
                     onSelect = { value -> prefsVm.setTheme(value) }
                 )
                 Spacer(Modifier.height(12.dp))
+                ModeRow(
+                    current = appPrefs.themeMode,
+                    onSelect = { value -> prefsVm.setThemeMode(value) }
+                )
+                Spacer(Modifier.height(12.dp))
                 LanguageRow(
                     current = appPrefs.language,
                     onSelect = { value -> prefsVm.setLanguage(value) }
@@ -455,6 +460,38 @@ private fun LanguageRow(current: String, onSelect: (String) -> Unit) {
             onValueChange = {},
             readOnly = true,
             label = { Text(LocalStrings.current.languageLabel) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp)
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            items.forEach { (key, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { onSelect(key); expanded = false }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModeRow(current: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val items = listOf(
+        "SYSTEM" to LocalStrings.current.themeModeSystem,
+        "LIGHT" to LocalStrings.current.themeModeLight,
+        "DARK" to LocalStrings.current.themeModeDark
+    )
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = items.firstOrNull { it.first == current.uppercase() }?.second ?: current,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(LocalStrings.current.themeModeLabel) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .menuAnchor()

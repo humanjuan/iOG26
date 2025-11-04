@@ -60,9 +60,14 @@ class MainActivity : ComponentActivity() {
                 "VIOLET" -> AppThemeOption.VIOLET
                 "IOG26" -> AppThemeOption.IOG26
                 "ROSE" -> AppThemeOption.ROSE
-                else -> AppThemeOption.GREEN
+                else -> AppThemeOption.IOG26
             }
-            IOG26Theme(appTheme = theme) {
+            val isDark = when (prefs.value.themeMode.uppercase()) {
+                "DARK" -> true
+                "LIGHT" -> false
+                else -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
+            IOG26Theme(appTheme = theme, darkTheme = isDark) {
                 ProvideStrings(language = prefs.value.language) {
                     ProvidePrivacy(language = prefs.value.language) {
                         AppNav(

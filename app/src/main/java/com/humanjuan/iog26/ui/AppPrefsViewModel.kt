@@ -30,5 +30,6 @@ class AppPrefsViewModel(app: Application) : AndroidViewModel(app) {
     )
 
     fun setTheme(theme: String) = viewModelScope.launch { repo.setTheme(theme) }
+    fun setThemeMode(mode: String) = viewModelScope.launch { repo.setThemeMode(mode) }
     fun setLanguage(lang: String) = viewModelScope.launch { repo.setLanguage(lang) }
 }

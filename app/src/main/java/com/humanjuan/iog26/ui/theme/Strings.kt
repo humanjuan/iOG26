@@ -70,6 +70,12 @@ data class Strings(
     val themeIOG26: String,
     val themeRose: String,
 
+    // Theme mode (System/Light/Dark)
+    val themeModeLabel: String = "Mode",
+    val themeModeSystem: String = "System default",
+    val themeModeLight: String = "Light",
+    val themeModeDark: String = "Dark",
+
     val blockedOnTemplate: String,
     val totalTemplate: String,
     val deletedNumberTemplate: String,
@@ -197,6 +203,11 @@ val StringsEs = Strings(
     themeIOG26 = "IOG26",
     themeRose = "Rosa",
 
+    // Theme Mode
+    themeModeLabel = "Modo",
+    themeModeSystem = "Igual que el sistema",
+    themeModeLight = "Claro",
+    themeModeDark = "Oscuro",
 
     blockedOnTemplate = "Bloqueado el %s",
     totalTemplate = "%d Total",
@@ -323,6 +334,12 @@ val StringsEn = Strings(
     themeIOG26 = "IOG26",
     themeRose = "Rose",
 
+    // Theme Mode
+    themeModeLabel = "Mode",
+    themeModeSystem = "System default",
+    themeModeLight = "Light",
+    themeModeDark = "Dark",
+
     blockedOnTemplate = "Blocked on %s",
     totalTemplate = "Total: %d",
     deletedNumberTemplate = "Number deleted: %s",
@@ -448,6 +465,11 @@ val StringsIt = Strings(
     themeIOG26 = "IOG26",
     themeRose = "Rosa",
 
+    // Theme Mode
+    themeModeLabel = "Modalità",
+    themeModeSystem = "Come il sistema",
+    themeModeLight = "Chiaro",
+    themeModeDark = "Scuro",
 
     blockedOnTemplate = "Bloccato il %s",
     totalTemplate = "Totale: %d",

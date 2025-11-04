@@ -10,28 +10,35 @@ import kotlinx.coroutines.flow.map
 val Context.appPrefsDataStore by preferencesDataStore("app_prefs.preferences_pb")
 
 /**
- * UI preferences persisted via DataStore: theme and language.
+ * UI preferences persisted via DataStore: theme palette, theme mode and language.
  */
 data class AppPrefs(
-    val theme: String = "GREEN",
+    val theme: String = "IOG26",
+    val themeMode: String = "SYSTEM", // SYSTEM | LIGHT | DARK
     val language: String = "ES"
 )
 
 object AppPrefsKeys {
     val THEME = stringPreferencesKey("ui_theme")
+    val THEME_MODE = stringPreferencesKey("ui_theme_mode")
     val LANGUAGE = stringPreferencesKey("ui_language")
 }
 
 class AppPrefsRepo(private val context: Context) {
     val flow: Flow<AppPrefs> = context.appPrefsDataStore.data.map { p ->
         AppPrefs(
-            theme = p[AppPrefsKeys.THEME] ?: "GREEN",
+            theme = p[AppPrefsKeys.THEME] ?: "IOG26",
+            themeMode = p[AppPrefsKeys.THEME_MODE] ?: "SYSTEM",
             language = p[AppPrefsKeys.LANGUAGE] ?: "ES"
         )
     }
 
     suspend fun setTheme(theme: String) {
         context.appPrefsDataStore.edit { it[AppPrefsKeys.THEME] = theme }
+    }
+
+    suspend fun setThemeMode(mode: String) {
+        context.appPrefsDataStore.edit { it[AppPrefsKeys.THEME_MODE] = mode }
     }
 
     suspend fun setLanguage(lang: String) {
