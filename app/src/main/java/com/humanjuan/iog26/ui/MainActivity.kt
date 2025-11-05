@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
             val prefsVm: AppPrefsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             val prefs = prefsVm.prefs.collectAsState()
             val theme = when (prefs.value.theme.uppercase()) {
+                "GREEN" -> AppThemeOption.GREEN
                 "NAVY" -> AppThemeOption.NAVY
                 "SUNSET" -> AppThemeOption.SUNSET
                 "VIOLET" -> AppThemeOption.VIOLET

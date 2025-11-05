@@ -282,7 +282,6 @@ private val DarkRose = darkColorScheme(
 fun IOG26Theme(
     appTheme: AppThemeOption = AppThemeOption.GREEN,
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Use dynamic color only if explicitly requested; default to our brand palette
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
