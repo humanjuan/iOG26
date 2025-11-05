@@ -150,7 +150,7 @@ fun PrefixListScreen(
             showRegex = showRegex,
             onDismiss = { showDialog = false },
             onSave = { prefixDigits, cc, regex ->
-                val err1 = vm.add(prefixDigits, cc)
+                val err1 = if (prefixDigits.isNotBlank()) vm.add(prefixDigits, cc) else null
                 val err2 = if (!regex.isNullOrBlank()) vm.addRegex(regex) else null
                 val error = err1 ?: err2
                 if (error == null) showDialog = false
