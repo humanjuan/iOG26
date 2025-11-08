@@ -15,8 +15,8 @@ android {
         applicationId = "com.humanjuan.iog26"
         minSdk = 30
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.3.2"
+        versionCode = 9
+        versionName = "1.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // BuildConfig fields for System Info section
