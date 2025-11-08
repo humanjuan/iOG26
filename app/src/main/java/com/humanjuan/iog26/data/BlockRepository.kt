@@ -64,19 +64,22 @@ private object InMemoryBlockRepository : BlockRepository {
     }
     fun removePrefix(id: Long) { prefixes.removeAll { it.id == id } }
 
-    init {
-        // Ejemplo: bloquear prefijo 800 sobre NSN, y un número E164 cualquiera
-        addPrefix(digits = "800", countryCode = null)
-        addBlockedNumber("+56987654321")
-        setBlockUnknown(false)
-        setDefaultRegion("CL")
-    }
+    // No demo data or defaults; repository starts empty to avoid any seeded examples.
 }
 
 private class RoomBackedBlockRepository(ctx: Context) : BlockRepository {
     private val appCtx = ctx.applicationContext
 
-    override fun defaultRegion(): String? = "CL"
+    override fun defaultRegion(): String? {
+        return try {
+            val tm = appCtx.getSystemService(android.content.Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
+            val simIso = tm.simCountryIso?.uppercase()?.takeIf { it.length == 2 }
+            val netIso = tm.networkCountryIso?.uppercase()?.takeIf { it.length == 2 }
+            simIso ?: netIso ?: java.util.Locale.getDefault().country.takeIf { it.length == 2 }
+        } catch (_: Throwable) {
+            java.util.Locale.getDefault().country.takeIf { it.length == 2 }
+        }
+    }
 
     override fun blockUnknownEnabled(): Boolean = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
         val s = AppDb.get(appCtx).settings().get() ?: Settings()

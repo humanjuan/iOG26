@@ -34,13 +34,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) &&
-                !roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
-                requestRole.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
-            }
-        }
+        // Requesting ROLE_CALL_SCREENING is now handled explicitly from Settings (not on startup)
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
             != PackageManager.PERMISSION_GRANTED

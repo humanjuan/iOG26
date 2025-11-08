@@ -101,7 +101,7 @@ fun NumberListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 10.dp)
             ) {
-                items(filtered, key = { it.e164 }) { item ->
+                items(filtered, key = { item -> "n:${item.e164}" }) { item ->
                     SwipeToDeleteItem(
                         item = item,
                         onDelete = {
@@ -124,7 +124,7 @@ fun NumberListScreen(
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                    items(regexItems, key = { it.id }) { rule ->
+                    items(regexItems, key = { "rn:${it.id}" }) { rule ->
                         RegexRuleSwipeItem(
                             pattern = rule.pattern,
                             createdAt = rule.createdAt,
@@ -154,11 +154,27 @@ fun NumberListScreen(
             showRegex = showRegex,
             onDismiss = { showDialog = false },
             onSave = { raw, regex ->
-                val err1 = if (raw.isNotBlank()) vm.add(raw) else null
-                val err2 = if (!regex.isNullOrBlank()) vm.addRegex(regex) else null
-                val error = err1 ?: err2
-                if (error == null) showDialog = false
-                else scope.launch { snackbarHostState.showSnackbar(error) }
+                val wantNumber = raw.isNotBlank()
+                val wantRegex = !regex.isNullOrBlank()
+
+                var earlyError: String? = null
+                if (wantRegex) {
+                    try { Regex(regex) } catch (t: Throwable) {
+                        earlyError = t.message ?: strings.regexInvalidMessage
+                    }
+                }
+
+                if (earlyError != null) {
+                    scope.launch { snackbarHostState.showSnackbar(earlyError) }
+                } else {
+                    val err1 = if (wantNumber) vm.add(raw) else null
+                    if (err1 != null) {
+                        scope.launch { snackbarHostState.showSnackbar(err1) }
+                    } else {
+                        val err2 = if (wantRegex) vm.addRegex(regex) else null
+                        if (err2 == null) showDialog = false else scope.launch { snackbarHostState.showSnackbar(err2) }
+                    }
+                }
             }
         )
     }
@@ -175,15 +191,16 @@ private fun SwipeToDeleteItem(
 
     if (!dismissed) {
         val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = {
-                if (it == SwipeToDismissBoxValue.StartToEnd || it == SwipeToDismissBoxValue.EndToStart) {
-                    dismissed = true
-                    onDelete()
-                    true
-                } else false
-            },
             positionalThreshold = { it * 0.3f }
         )
+
+        LaunchedEffect(dismissState.currentValue) {
+            if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd ||
+                dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                dismissed = true
+                onDelete()
+            }
+        }
 
         SwipeToDismissBox(
             state = dismissState,
@@ -448,15 +465,15 @@ private fun RegexRuleSwipeItem(
     var dismissed by remember { mutableStateOf(false) }
     if (!dismissed) {
         val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = {
-                if (it == SwipeToDismissBoxValue.StartToEnd || it == SwipeToDismissBoxValue.EndToStart) {
-                    dismissed = true
-                    onDelete()
-                    true
-                } else false
-            },
             positionalThreshold = { it * 0.3f }
         )
+        LaunchedEffect(dismissState.currentValue) {
+            if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd ||
+                dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                dismissed = true
+                onDelete()
+            }
+        }
         SwipeToDismissBox(
             state = dismissState,
             enableDismissFromStartToEnd = true,

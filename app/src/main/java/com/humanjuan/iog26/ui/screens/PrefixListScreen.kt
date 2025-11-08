@@ -95,7 +95,7 @@ fun PrefixListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 10.dp)
             ) {
-                items(filtered, key = { rule -> rule.id }) { rule ->
+                items(filtered, key = { rule -> "p:${rule.id}" }) { rule ->
                     SwipeToDeleteItem(
                         rule = rule,
                         onDelete = {
@@ -120,7 +120,7 @@ fun PrefixListScreen(
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
-                    items(regexItems, key = { it.id }) { rule ->
+                    items(regexItems, key = { "rp:${it.id}" }) { rule ->
                         RegexRuleSwipeItem(
                             pattern = rule.pattern,
                             createdAt = rule.createdAt,
@@ -150,12 +150,29 @@ fun PrefixListScreen(
             showRegex = showRegex,
             onDismiss = { showDialog = false },
             onSave = { prefixDigits, cc, regex ->
-                val err1 = if (prefixDigits.isNotBlank()) vm.add(prefixDigits, cc) else null
-                val err2 = if (!regex.isNullOrBlank()) vm.addRegex(regex) else null
-                val error = err1 ?: err2
-                if (error == null) showDialog = false
-                else {
-                    scope.launch { snackbarHostState.showSnackbar(error) }
+                val wantPrefix = prefixDigits.isNotBlank()
+                val wantRegex = !regex.isNullOrBlank()
+
+                var earlyError: String? = null
+                if (wantRegex) {
+                    try { Regex(regex) } catch (t: Throwable) {
+                        earlyError = t.message ?: strings.regexInvalidMessage
+                    }
+                }
+                if (earlyError == null && wantPrefix && prefixDigits.none(Char::isDigit)) {
+                    earlyError = strings.prefixLabel + ": inválido"
+                }
+
+                if (earlyError != null) {
+                    scope.launch { snackbarHostState.showSnackbar(earlyError) }
+                } else {
+                    val err1 = if (wantPrefix) vm.add(prefixDigits, cc) else null
+                    if (err1 != null) {
+                        scope.launch { snackbarHostState.showSnackbar(err1) }
+                    } else {
+                        val err2 = if (wantRegex) vm.addRegex(regex) else null
+                        if (err2 == null) showDialog = false else scope.launch { snackbarHostState.showSnackbar(err2) }
+                    }
                 }
             }
         )
@@ -172,15 +189,16 @@ private fun SwipeToDeleteItem(
 
     if (!dismissed) {
         val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = {
-                if (it == SwipeToDismissBoxValue.StartToEnd || it == SwipeToDismissBoxValue.EndToStart) {
-                    dismissed = true
-                    onDelete()
-                    true
-                } else false
-            },
             positionalThreshold = { it * 0.3f }
         )
+
+        LaunchedEffect(dismissState.currentValue) {
+            if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd ||
+                dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                dismissed = true
+                onDelete()
+            }
+        }
 
         SwipeToDismissBox(
             state = dismissState,

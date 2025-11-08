@@ -25,7 +25,7 @@ class NumbersViewModel(app: Application) : AndroidViewModel(app) {
     private val _regexItems = MutableStateFlow<List<UiRegexRule>>(emptyList())
     val regexItems: StateFlow<List<UiRegexRule>> = _regexItems
 
-    var defaultRegion: String = "CL"
+    var defaultRegion: String = com.humanjuan.iog26.data.BlockRepository.get(app).defaultRegion() ?: "ZZ"
 
     init { refresh(); refreshRegex() }
 
@@ -65,7 +65,8 @@ class NumbersViewModel(app: Application) : AndroidViewModel(app) {
             }
             null
         } catch (t: Throwable) {
-            t.message ?: com.humanjuan.iog26.ui.theme.StringsEs.regexInvalidMessage
+            android.util.Log.w("NumbersViewModel", "Invalid regex pattern sha1=${sha1(pattern)}: ${t.message}")
+            friendlyRegexError(t)
         }
     }
 
@@ -78,7 +79,24 @@ class NumbersViewModel(app: Application) : AndroidViewModel(app) {
             }
             null
         } catch (t: Throwable) {
-            t.message ?: com.humanjuan.iog26.ui.theme.StringsEs.regexInvalidMessage
+            android.util.Log.w("NumbersViewModel", "Invalid regex (update) sha1=${sha1(pattern)}: ${t.message}")
+            friendlyRegexError(t)
+        }
+    }
+
+    private fun sha1(s: String): String {
+        val md = java.security.MessageDigest.getInstance("SHA-1")
+        val bytes = md.digest(s.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun friendlyRegexError(t: Throwable): String {
+        val m = t.message?.lowercase().orEmpty()
+        return when {
+            "look-behind" in m && "invalid" in m -> "Look-behind no soportado o de longitud variable"
+            "dangling meta character" in m || "quantifier" in m -> "Cuantificador inválido"
+            "unclosed" in m || ("missing" in m && ")" in m) -> "Paréntesis sin cerrar"
+            else -> com.humanjuan.iog26.ui.theme.StringsEs.regexInvalidMessage
         }
     }
 
