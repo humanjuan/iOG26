@@ -34,7 +34,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Requesting ROLE_CALL_SCREENING is now handled explicitly from Settings (not on startup)
+        // One-time Call Screening role prompt on first launch (in-app)
+        val roleManager = getSystemService(RoleManager::class.java)
+        val needRole = roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) &&
+                !roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)
+        val prefs = getSharedPreferences("runtime", MODE_PRIVATE)
+        val askedOnce = prefs.getBoolean("asked_call_role_once", false)
+        if (needRole && !askedOnce) {
+            prefs.edit().putBoolean("asked_call_role_once", true).apply()
+            requestRole.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
+        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
             != PackageManager.PERMISSION_GRANTED

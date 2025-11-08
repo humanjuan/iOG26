@@ -3,7 +3,6 @@ package com.humanjuan.iog26.ui
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
-import android.os.Build
 import android.provider.ContactsContract
 import android.telephony.PhoneNumberUtils
 import androidx.core.content.ContextCompat
@@ -62,20 +61,9 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
     val countryStats: StateFlow<List<CountryStat>> = _countryStats
 
     fun load(daysBack: Long = 0) = viewModelScope.launch(Dispatchers.IO) {
-        val sinceMillis = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val now = ZonedDateTime.now()
-            val start = now.minusDays(daysBack).withHour(0).withMinute(0).withSecond(0).withNano(0)
-            start.toInstant().toEpochMilli()
-        } else {
-            val cal = Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -daysBack.toInt())
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            cal.timeInMillis
-        }
+        val now = ZonedDateTime.now()
+        val start = now.minusDays(daysBack).withHour(0).withMinute(0).withSecond(0).withNano(0)
+        val sinceMillis = start.toInstant().toEpochMilli()
 
         // DB reads
         val events = db.events().since(sinceMillis)
@@ -151,20 +139,9 @@ class EventsViewModel(app: Application) : AndroidViewModel(app) {
 
     // Load only the recent grouped list for the given range; keep indicators/charts intact
     fun loadRecentFor(daysBack: Long) = viewModelScope.launch(Dispatchers.IO) {
-        val sinceMillis = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val now = ZonedDateTime.now()
-            val start = now.minusDays(daysBack).withHour(0).withMinute(0).withSecond(0).withNano(0)
-            start.toInstant().toEpochMilli()
-        } else {
-            val cal = Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, -daysBack.toInt())
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            cal.timeInMillis
-        }
+        val now = ZonedDateTime.now()
+        val start = now.minusDays(daysBack).withHour(0).withMinute(0).withSecond(0).withNano(0)
+        val sinceMillis = start.toInstant().toEpochMilli()
         val events = db.events().since(sinceMillis)
         _groupedItems.value = events
             .groupBy { it.e164 ?: "Unknown" }

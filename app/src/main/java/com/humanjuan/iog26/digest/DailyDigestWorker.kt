@@ -4,8 +4,6 @@ import android.Manifest
 import android.R
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -24,7 +22,6 @@ class DailyDigestWorker(
 ) : CoroutineWorker(appCtx, params) {
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun doWork(): Result {
         val db = AppDb.get(applicationContext)
         val now = ZonedDateTime.now()
@@ -39,12 +36,10 @@ class DailyDigestWorker(
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun show(blocked: List<String>) {
         val channelId = "CALL_FILTER_DIGEST"
-        if (Build.VERSION.SDK_INT >= 26) {
-            val mgr = applicationContext.getSystemService(NotificationManager::class.java)
-            mgr.createNotificationChannel(
-                NotificationChannel(channelId, "Resumen de bloqueos", NotificationManager.IMPORTANCE_DEFAULT)
-            )
-        }
+        val mgr = applicationContext.getSystemService(NotificationManager::class.java)
+        mgr.createNotificationChannel(
+            NotificationChannel(channelId, "Resumen de bloqueos", NotificationManager.IMPORTANCE_DEFAULT)
+        )
         val top = blocked.distinct().take(5).joinToString("\n")
         val more = if (blocked.size > 5) "\n… y ${blocked.size - 5} más" else ""
         val notif = NotificationCompat.Builder(applicationContext, channelId)
@@ -56,7 +51,6 @@ class DailyDigestWorker(
     }
 
     companion object {
-        @RequiresApi(Build.VERSION_CODES.O)
         fun schedule(ctx: android.content.Context, hour: Int, minute: Int) {
             val now = ZonedDateTime.now()
             var next = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)

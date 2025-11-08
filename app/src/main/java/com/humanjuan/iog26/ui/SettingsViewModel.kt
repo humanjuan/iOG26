@@ -116,21 +116,17 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setDigestEnabled(enabled: Boolean) = viewModelScope.launch {
         digestRepo.setEnabled(enabled)
         val str = strings()
-        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (enabled) {
             val curr = ui.value
             DailyDigestWorker.schedule(getApplication(), curr.digestHour, curr.digestMinute)
         }
-        if (enabled && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            _events.tryEmit(str.snackDigestRequiresO)
-        } else {
-            _events.tryEmit(if (enabled) str.snackDigestOn else str.snackDigestOff)
-        }
+        _events.tryEmit(if (enabled) str.snackDigestOn else str.snackDigestOff)
     }
 
     fun setDigestTime(hour: Int, minute: Int) = viewModelScope.launch {
         digestRepo.setTime(hour, minute)
         val enabled = ui.value.digestEnabled
-        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (enabled) {
             DailyDigestWorker.schedule(getApplication(), hour, minute)
         }
         val str = strings()
