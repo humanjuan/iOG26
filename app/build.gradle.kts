@@ -15,17 +15,18 @@ android {
         applicationId = "com.humanjuan.iog26"
         minSdk = 30
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.3.3"
+        versionCode = 15
+        versionName = "1.3.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // BuildConfig fields for System Info section
         buildConfigField("String", "APP_VERSION", "\"" + versionName + "\"")
-        buildConfigField("String", "ROOM_VERSION", "\"2.8.2\"")
-        buildConfigField("String", "WORK_VERSION", "\"2.10.5\"")
-        buildConfigField("String", "DATASTORE_VERSION", "\"1.1.7\"")
-        buildConfigField("String", "LIBPHONENUMBER_VERSION", "\"9.0.16\"")
-        buildConfigField("String", "MATERIAL3_VERSION", "\"1.4.0\"")
+        // Leer versiones desde el Version Catalog para evitar desincronizaciones
+        buildConfigField("String", "ROOM_VERSION", "\"${libs.versions.room.get()}\"")
+        buildConfigField("String", "WORK_VERSION", "\"${libs.versions.work.get()}\"")
+        buildConfigField("String", "DATASTORE_VERSION", "\"${libs.versions.datastore.get()}\"")
+        buildConfigField("String", "LIBPHONENUMBER_VERSION", "\"${libs.versions.libphonenumber.get()}\"")
+        buildConfigField("String", "MATERIAL3_VERSION", "\"${libs.versions.material3.get()}\"")
     }
 
     buildFeatures {
@@ -53,6 +54,16 @@ android {
             )
         }
     }
+
+    // Exponer los esquemas para pruebas de migración (androidTest)
+    sourceSets["androidTest"].assets.srcDir(file("schemas"))
+}
+
+// Exportar esquemas de Room a app/schemas usando KSP args
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+    arg("room.generateKotlin", "true")
 }
 
 dependencies {
